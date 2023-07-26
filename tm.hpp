@@ -69,8 +69,8 @@ inline void tensor_contraction(const Matrix0 &phi, const Tensor0 &U, Tensor1 &W)
     constexpr std::size_t Nb = Tensor1::template size<1>();
     constexpr std::size_t Nc = Tensor1::template size<2>();
     constexpr std::size_t Nk = Tensor0::template size<0>();
-
     constexpr std::size_t Nd = Nb * Nc;
+
     for (std::size_t i = 0; i < Na; ++i)
         for (std::size_t k = 0; k < Nk; k++)
             for (std::size_t j = 0; j < Nd; ++j)

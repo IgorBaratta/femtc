@@ -11,6 +11,8 @@ using T = double;
 
 int main()
 {
+
+    // read input from terminal
     constexpr int p = 12;
 
     Tensor<T, p + 1, p + 1, p + 1> u;
