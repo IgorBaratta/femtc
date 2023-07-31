@@ -73,10 +73,12 @@ void gemm_libxsmm(benchmark::State &state)
 
     int nprocs;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    
+    state.counters["Ndofs"] = size;
 
     // Set the number of bytes processed (2 read + 1 write)
-    state.SetBytesProcessed(3 * num_bytes * size * state.iterations() * nprocs);
-    state.counters["Bytes"] = 2 * num_bytes * size;
+    double num_gbytes = 3 * num_bytes * size * state.iterations() * nprocs;
+    state.counters["GBytes/s"] = benchmark::Counter(num_gbytes, benchmark::Counter::kIsRate);
 
     // Set the number of FLOPs processed (*2 for multiply and add)
     double num_flops = 2 * m * n * k * ncells * state.iterations() / 1e9;
@@ -137,10 +139,12 @@ void gemm_loops(benchmark::State &state)
 
     int nprocs;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    
+    state.counters["Ndofs"] = size;
 
     // Set the number of bytes processed (2 read + 1 write)
-    state.SetBytesProcessed(3 * num_bytes * size * state.iterations() * nprocs);
-    state.counters["Bytes"] = 2 * num_bytes * size;
+    double num_gbytes = 3 * num_bytes * size * state.iterations() * nprocs;
+    state.counters["GBytes/s"] = benchmark::Counter(num_gbytes, benchmark::Counter::kIsRate);
 
     // Set the number of FLOPs processed (*2 for multiply and add)
     double num_flops = 2 * m * n * k * ncells * state.iterations() / 1e9;
