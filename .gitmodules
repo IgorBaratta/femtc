@@ -1,0 +1,3 @@
+[submodule "Fastor"]
+	path = Fastor
+	url = git@github.com:romeric/Fastor.git

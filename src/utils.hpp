@@ -18,8 +18,8 @@ public:
 double reduce_time(double time)
 {
     double global_time;
-    MPI_Reduce(&time, &global_time, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     int comm_size;
+    MPI_Allreduce(&time, &global_time, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
     global_time /= comm_size;
     return global_time;

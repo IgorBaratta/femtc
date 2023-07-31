@@ -10,6 +10,19 @@ set(CMAKE_CXX_FLAGS "-Ofast -march=native ${CMAKE_CXX_FLAGS} -DNDEBUG -Wall")
 
 include_directories("src")
 
+# clone repository https://github.com/romeric/Fastor
+include(FetchContent)
+FetchContent_Declare(
+    Fastor
+    GIT_REPOSITORY "https://github.com/romeric/Fastor"
+    GIT_TAG "master"
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+)
+FetchContent_MakeAvailable(Fastor)
+set(FASTOR_INCLUDE_DIR ${Fastor_SOURCE_DIR}/Fastor)
+message(STATUS "Fastor include dir is ${FASTOR_INCLUDE_DIR}")
+
 # find google benchmark
 find_package(benchmark REQUIRED)
 
@@ -38,6 +51,6 @@ foreach(sourcefile ${SOURCES})
     # I used a simple string replace, to cut off .cpp.
     string(REPLACE ".cpp" "" name ${sourcefile})
     add_executable(${name} ${sourcefile})
-    target_include_directories(${name} PUBLIC ${XSMM_INCLUDES})
+    target_include_directories(${name} PUBLIC ${XSMM_INCLUDES} ${FASTOR_INCLUDE_DIR})
     target_link_libraries(${name} benchmark::benchmark likwid::likwid ${BLAS_LIBRARIES} MPI::MPI_CXX)
 endforeach(sourcefile ${SOURCES})
