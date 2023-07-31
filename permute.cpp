@@ -2,6 +2,7 @@
 #include <benchmark/benchmark.h>
 #include <random>
 #include <functional>
+#include <libxsmm.h>
 
 #include "permutations.hpp"
 
@@ -51,18 +52,17 @@ static void BM_permute(benchmark::State &state)
 
     // Set the number of bytes processed (1 read + 1 write)
     state.SetBytesProcessed(2 * num_bytes * size * state.iterations());
-    state.SetItemsProcessed(size * state.iterations());
     state.counters["Bytes"] = 2 * num_bytes * size;
 }
 
 // Register the benchmark
-BENCHMARK_TEMPLATE(BM_permute, 1, TensorLayout::ijk, TensorLayout::ijk)->Range(1e3, 1e6)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_permute, 2, TensorLayout::ijk, TensorLayout::ijk)->Range(1e3, 1e6)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_permute, 3, TensorLayout::ijk, TensorLayout::ijk)->Range(1e3, 1e6)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_permute, 4, TensorLayout::ijk, TensorLayout::ijk)->Range(1e3, 1e6)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_permute, 5, TensorLayout::ijk, TensorLayout::ijk)->Range(1e3, 1e6)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_permute, 6, TensorLayout::ijk, TensorLayout::ijk)->Range(1e3, 1e6)->Unit(benchmark::kMillisecond);
-BENCHMARK_TEMPLATE(BM_permute, 7, TensorLayout::ijk, TensorLayout::ijk)->Range(1e3, 1e6)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_permute, 1, TensorLayout::ijk, TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_permute, 2, TensorLayout::ijk, TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_permute, 3, TensorLayout::ijk, TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_permute, 4, TensorLayout::ijk, TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_permute, 5, TensorLayout::ijk, TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_permute, 6, TensorLayout::ijk, TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond);
+BENCHMARK_TEMPLATE(BM_permute, 7, TensorLayout::ijk, TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond);
 
 // BENCHMARK_TEMPLATE(BM_permute, 5, TensorLayout::ijk, TensorLayout::ikj)->Range(1e3, 1e6);
 // BENCHMARK_TEMPLATE(BM_permute, 5, TensorLayout::jik, TensorLayout::jik)->Range(1e3, 1e6);
