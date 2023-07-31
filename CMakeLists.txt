@@ -19,6 +19,9 @@ find_package(likwid REQUIRED)
 # find BLAS any flavor
 find_package(BLAS REQUIRED)
 
+# find MPI
+find_package(MPI REQUIRED)
+
 # find libxsmm
 if(NOT DEFINED ENV{LIBXSMM_HOME})
     message(FATAL_ERROR "LIBXSMM_HOME is not defined")
@@ -36,5 +39,5 @@ foreach(sourcefile ${SOURCES})
     string(REPLACE ".cpp" "" name ${sourcefile})
     add_executable(${name} ${sourcefile})
     target_include_directories(${name} PUBLIC ${XSMM_INCLUDES})
-    target_link_libraries(${name} benchmark::benchmark likwid::likwid ${BLAS_LIBRARIES})
+    target_link_libraries(${name} benchmark::benchmark likwid::likwid ${BLAS_LIBRARIES} MPI::MPI_CXX)
 endforeach(sourcefile ${SOURCES})
