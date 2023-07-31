@@ -33,8 +33,8 @@ void gemm_libxsmm(benchmark::State &state)
     std::array<T, N0 * N0> A;
 
     // Allocate memory for the input and output arrays
-    std::vector<T> B(N);
-    std::vector<T> C(N, 0.0);
+    std::vector<T> B(ncells * ndofs, 0.0);
+    std::vector<T> C(ncells * ndofs, 0.0);
 
     // Fill the input array with random data using c++ random
     std::random_device rd;
@@ -59,16 +59,16 @@ void gemm_libxsmm(benchmark::State &state)
         double t = MPI_Wtime();
         for (std::size_t i = 0; i < ncells; i++)
         {
-            T *in = B.data() + i * n;
-            T *out = C.data() + i * n;
+            T *in = B.data() + i * ndofs;
+            T *out = C.data() + i * ndofs;
             kernel(A.data(), in, out);
         }
         benchmark::ClobberMemory();
         t = MPI_Wtime() - t;
         double avg_time = reduce_time(t);
+        // Set the iteration time in seconds
         state.SetIterationTime(avg_time);
     }
-    int num_bytes = sizeof(T);
     int size = ncells * ndofs;
 
     int nprocs;
@@ -77,7 +77,7 @@ void gemm_libxsmm(benchmark::State &state)
     state.counters["Ndofs"] = size;
 
     // Set the number of bytes processed (2 read + 1 write)
-    double num_gbytes = 3 * num_bytes * size * state.iterations() * nprocs / 1e9;
+    double num_gbytes = 3 * sizeof(T) * size * state.iterations() * nprocs / 1e9;
     state.counters["GBytes/s"] = benchmark::Counter(num_gbytes, benchmark::Counter::kIsRate);
 
     // Set the number of FLOPs processed (*2 for multiply and add)
@@ -103,8 +103,8 @@ void gemm_loops(benchmark::State &state)
     std::array<T, N0 * N0> A;
 
     // Allocate memory for the input and output arrays
-    std::vector<T> B(N);
-    std::vector<T> C(N, 0.0);
+    std::vector<T> B(ncells * ndofs, 0.0);
+    std::vector<T> C(ncells * ndofs, 0.0);
 
     // Fill the input array with random data using c++ random
     std::random_device rd;
@@ -125,25 +125,23 @@ void gemm_loops(benchmark::State &state)
         double t = MPI_Wtime();
         for (std::size_t i = 0; i < ncells; i++)
         {
-            T *in = B.data() + i * n;
-            T *out = C.data() + i * n;
+            T *in = B.data() + i * ndofs;
+            T *out = C.data() + i * ndofs;
             linalg::micro_gemm<T, k, m, n, order>(A.data(), in, out);
         }
         benchmark::ClobberMemory();
         t = MPI_Wtime() - t;
-        double avg_time = reduce_time(t);
-        state.SetIterationTime(avg_time);
+        // double avg_time = reduce_time(t);
+        state.SetIterationTime(t);
     }
-    int num_bytes = sizeof(T);
     int size = ncells * ndofs;
-
     int nprocs;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
     state.counters["Ndofs"] = size;
 
     // Set the number of bytes processed (2 read + 1 write)
-    double num_gbytes = 3 * num_bytes * size * state.iterations() * nprocs / 1e9;
+    double num_gbytes = 3 * sizeof(T) * size * state.iterations() * nprocs / 1e9;
     state.counters["GBytes/s"] = benchmark::Counter(num_gbytes, benchmark::Counter::kIsRate);
 
     // Set the number of FLOPs processed (*2 for multiply and add)
@@ -152,83 +150,83 @@ void gemm_loops(benchmark::State &state)
 }
 
 // // Register the benchmark Libxsmm
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 1)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 2)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 3)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 4)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 5)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 6)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 7)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 8)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 9)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_libxsmm, double, 10)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 1)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 2)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 3)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 4)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 5)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 6)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 7)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 8)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 9)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_libxsmm, double, 10)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
 
 // Register the benchmark Loops (ijk) from degree 1 to 10
-BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::ijk)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
 
-BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::ikj)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
 
-BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::jik)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
 
-BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::jki)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
 
-BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::kij)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
 
-BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
-BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 1, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 2, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 3, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 4, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 5, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 6, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 7, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 8, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 9, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
+BENCHMARK_TEMPLATE(gemm_loops, double, 10, linalg::TensorLayout::kji)->Range(1e5, 1e6)->Unit(benchmark::kSecond)->UseManualTime();
 
 // Run the benchmark
 int main(int argc, char **argv)
