@@ -77,7 +77,7 @@ void gemm_libxsmm(benchmark::State &state)
     state.counters["Ndofs"] = size;
 
     // Set the number of bytes processed (2 read + 1 write)
-    ddouble num_gbytes = 3 * num_bytes * size * state.iterations() * nprocs / 1e9;
+    double num_gbytes = 3 * num_bytes * size * state.iterations() * nprocs / 1e9;
     state.counters["GBytes/s"] = benchmark::Counter(num_gbytes, benchmark::Counter::kIsRate);
 
     // Set the number of FLOPs processed (*2 for multiply and add)
