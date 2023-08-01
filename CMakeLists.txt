@@ -3,24 +3,18 @@ cmake_minimum_required(VERSION 3.20)
 set(PROJECT_NAME "tcfem")
 project(${PROJECT_NAME} VERSION 1.0.0)
 
+
+# specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_BUILD_TYPE Release)
 
-set(CMAKE_CXX_FLAGS "-Ofast -march=native ${CMAKE_CXX_FLAGS} -DNDEBUG -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall")
 
 include_directories("src")
 
 # clone repository https://github.com/romeric/Fastor
-include(FetchContent)
-FetchContent_Declare(
-    Fastor
-    GIT_REPOSITORY "https://github.com/romeric/Fastor"
-    GIT_TAG "master"
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-)
-FetchContent_MakeAvailable(Fastor)
-set(FASTOR_INCLUDE_DIR ${Fastor_SOURCE_DIR}/Fastor)
+set(FASTOR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/Fastor)
 message(STATUS "Fastor include dir is ${FASTOR_INCLUDE_DIR}")
 
 # find google benchmark
@@ -46,6 +40,7 @@ endif()
 # Create a sources variable with a link to all cpp files to compile
 set(SOURCES permute.cpp batch_gemm.cpp)
 
+
 # Add a different executable for each cpp file in SOURCES
 foreach(sourcefile ${SOURCES})
     # I used a simple string replace, to cut off .cpp.
@@ -54,3 +49,6 @@ foreach(sourcefile ${SOURCES})
     target_include_directories(${name} PUBLIC ${XSMM_INCLUDES} ${FASTOR_INCLUDE_DIR})
     target_link_libraries(${name} benchmark::benchmark likwid::likwid ${BLAS_LIBRARIES} MPI::MPI_CXX)
 endforeach(sourcefile ${SOURCES})
+
+# print used CMAKE_CXX_FLAGS 
+message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
