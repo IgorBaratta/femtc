@@ -6,5 +6,5 @@
 git clone --recurse-submodules git@github.com:IgorBaratta/femtc.git
 mkdir build && cd build
 
-cmake -DCMAKE_CXX_FLAGS="-march=native -Ofast"
+cmake -DCMAKE_CXX_FLAGS="-march=native -Ofast" ..
 ```
