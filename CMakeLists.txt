@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_BUILD_TYPE Release)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall -Wfatal-errors")
 
 include_directories("src")
 
@@ -38,7 +38,7 @@ else()
 endif()
 
 # Create a sources variable with a link to all cpp files to compile
-set(SOURCES permute.cpp batch_gemm.cpp)
+set(SOURCES gemm_libxsmm.cpp gemm_order.cpp)
 
 
 # Add a different executable for each cpp file in SOURCES
