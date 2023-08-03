@@ -10,6 +10,17 @@
 
 using T = double;
 
+template <typename T>
+std::string type_name()
+{
+    if (std::is_same<T, float>::value)
+        return "float";
+    else if (std::is_same<T, double>::value)
+        return "double";
+    else
+        return "unknown";
+}
+
 // create main
 int main(int argc, char **argv)
 {
@@ -106,19 +117,33 @@ int main(int argc, char **argv)
         }
         double t1 = MPI_Wtime();
 
-        // Compute FLOPs
         double flops = 2.0 * m * n * k * num_cells;
         // Compute memory access
         double mem_access = (U.size() + W.size()) * sizeof(T);
+
+        double GFLOPs = flops / (t1 - t0) / 1e9;
+        double GBs = mem_access / (t1 - t0) / 1e9;
+        double Gdofs = (num_cells * ndofs) / (t1 - t0) / 1e9;
+
+        // Sum over all ranks
+        double GFLOPs_sum = 0.0;
+        double GBs_sum = 0.0;
+        double Gdofs_sum = 0.0;
+        MPI_Reduce(&GFLOPs, &GFLOPs_sum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(&GBs, &GBs_sum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(&Gdofs, &Gdofs_sum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
 
         // print time
         if (rank == 0)
         {
             std::cout << "Degree: " << degree << std::endl;
-            std::cout << "Ndofs: " << Ndofs << std::endl;
+            std::cout << "Comm size: " << size << std::endl;
+            std::cout << "Scalar: " << type_name<T>() << std::endl;
+            std::cout << "Ndofs: " << U.size() << std::endl;
             std::cout << "Time: " << t1 - t0 << std::endl;
-            std::cout << "GFLOP/s: " << flops / (t1 - t0) / 1e9 << std::endl;
-            std::cout << "GB/s: " << mem_access / (t1 - t0) / 1e9 << std::endl;
+            std::cout << "GFLOP/s: " << GFLOPs_sum << std::endl;
+            std::cout << "GB/s: " << GBs_sum << std::endl;
+            std::cout << "GDOF/s: " << Gdofs_sum << std::endl;
         }
     }
 
