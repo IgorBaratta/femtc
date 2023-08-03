@@ -11,7 +11,6 @@
 
 namespace linalg
 {
-
     // Enum for loop order
     enum class Order
     {
