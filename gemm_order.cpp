@@ -10,7 +10,7 @@
 
 #include "tm.hpp"
 
-using T = float;
+using T = double;
 
 template <typename T>
 std::string type_name()
@@ -125,18 +125,28 @@ int main(int argc, char **argv)
         MPI_Reduce(&GBs, &GBs_sum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
         MPI_Reduce(&Gdofs, &Gdofs_sum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
 
+        bool table = true;
         // print time
         if (rank == 0)
         {
-            std::cout << "Degree: " << degree << std::endl;
-            std::cout << "Comm size: " << size << std::endl;
-            std::cout << "Scalar: " << type_name<T>() << std::endl;
-            std::cout << "Ndofs: " << U.size() << std::endl;
-            std::cout << "Time: " << t1 - t0 << std::endl;
-            std::cout << "Loop Order: " << order_str << std::endl;
-            std::cout << "GFLOP/s: " << GFLOPs_sum << std::endl;
-            std::cout << "GB/s: " << GBs_sum << std::endl;
-            std::cout << "GDOF/s: " << Gdofs_sum << std::endl;
+            if (table)
+            {
+                std::cout << degree << " " << size << " " << type_name<T>() << " ";
+                std::cout << Ndofs << " " << t1 - t0 << " " << order_str << " ";
+                std::cout << GFLOPs_sum << " " << GBs_sum << " " << Gdofs_sum << std::endl;
+            }
+            else
+            {
+                std::cout << "Degree: " << degree << std::endl;
+                std::cout << "Comm size: " << size << std::endl;
+                std::cout << "Scalar: " << type_name<T>() << std::endl;
+                std::cout << "Ndofs: " << U.size() << std::endl;
+                std::cout << "Time: " << t1 - t0 << std::endl;
+                std::cout << "Loop Order: " << order_str << std::endl;
+                std::cout << "GFLOP/s: " << GFLOPs_sum << std::endl;
+                std::cout << "GB/s: " << GBs_sum << std::endl;
+                std::cout << "GDOF/s: " << Gdofs_sum << std::endl;
+            }
         }
     }
 
