@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 
         // check that all values in W are positive
         // throw an error otherwise
-        for (int i = 0; i < W.size(); i++)
+        for (std::size_t i = 0; i < W.size(); i++)
             if (W[i] < 0)
                 throw std::runtime_error("W is negative");
 
