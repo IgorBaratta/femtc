@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         {
             std::fill(temp0.begin(), temp0.end(), 0.0);
             std::fill(temp1.begin(), temp1.end(), 0.0);
-            
+
             // get pointer to U for cell i
             const T *U_cell = &U[cell * ndofs];
 
@@ -170,6 +170,8 @@ int main(int argc, char **argv)
             }
         }
     }
+
+    MPI_Finalize();
 
     return 0;
 }
