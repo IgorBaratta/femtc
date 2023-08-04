@@ -126,7 +126,11 @@ namespace linalg
             const T *U_cell = &U[cell * ndofs];
             const T *_phi = &phi[0];
             T *W_cell = &W[cell * ndofs];
-            micro_gemm<T, k, m, n, layout>(_phi, U_cell, W_cell);
+            T temp0[ndofs] = {0.0};
+            T temp1[ndofs] = {0.0};
+            micro_gemm<T, k, m, n, layout>(_phi, U_cell, temp0);
+            micro_gemm<T, k, m, n, layout>(_phi, temp0, temp1);
+            micro_gemm<T, k, m, n, layout>(_phi, temp1, W_cell);
         }
     }
 
