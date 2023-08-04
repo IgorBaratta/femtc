@@ -103,6 +103,9 @@ int main(int argc, char **argv)
 
         // get time from MPI_Wtime()
         double t0 = MPI_Wtime();
+
+        std::vector<T> temp0(N0 * N1 * N2);
+        std::vector<T> temp1(N0 * N1 * N2);
         // loop over cells
         for (int cell = 0; cell < num_cells; cell++)
         {
@@ -112,8 +115,14 @@ int main(int argc, char **argv)
             // get pointer to W for cell i
             T *W_cell = &W[cell * ndofs];
 
-            // call libxsmm kernel
-            kernel(phi.data(), U_cell, W_cell);
+            // 1st tensor contraction
+            kernel(phi.data(), U_cell, temp0.data());
+
+            // 2nd tensor contraction
+            kernel(phi.data(), temp0.data(), temp1.data());
+
+            // 3d tensor contraction
+            kernel(phi.data(), temp1.data(), W_cell);
         }
         double t1 = MPI_Wtime();
 
