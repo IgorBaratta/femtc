@@ -109,6 +109,9 @@ int main(int argc, char **argv)
         // loop over cells
         for (int cell = 0; cell < num_cells; cell++)
         {
+            std::fill(temp0.begin(), temp0.end(), 0.0);
+            std::fill(temp1.begin(), temp1.end(), 0.0);
+            
             // get pointer to U for cell i
             const T *U_cell = &U[cell * ndofs];
 
