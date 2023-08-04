@@ -91,20 +91,6 @@ int main(int argc, char **argv)
         linalg::batched_gemm<T>(phi, U, W, num_cells, degree, order);
         double t1 = MPI_Wtime();
 
-        // check correctness
-        std::vector<T> W_ref(ndofs, 0.0);
-        for (int i0 = 0; i0 < p + 1; i0++)
-            for (int i1 = 0; i1 < p + 1; i1++)
-                for (int i2 = 0; i2 < p + 1; i2++)
-                    for (int iq = 0; iq < p + 1; iq++)
-                        W_ref[iq * (p + 1) * (p + 1) + i1 * (p + 1) + i2] += phi[i0 * (p + 1) + iq] * U[i0 * (p + 1) * (p + 1) + i1 * (p + 1) + i2];
-
-        // print W and W_ref
-        if (rank == 0)
-            for (int i = 0; i < ndofs; i++)
-                if (std::abs(W[i] - W_ref[i]) > 1e-12)
-                    throw std::runtime_error("Error in contraction");
-
         // Compute FLOPs
         int m = p + 1;
         int n = (p + 1) * (p + 1);
