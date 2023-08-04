@@ -131,7 +131,7 @@ int main(int argc, char **argv)
         double t1 = MPI_Wtime();
         MPI_Barrier(comm);
 
-        double flops = 2.0 * m * n * k * num_cells;
+        double flops = 3 * (2.0 * m * n * k) * num_cells;
         // Compute memory access
         double mem_access = (U.size() + 2 * W.size()) * sizeof(T);
 

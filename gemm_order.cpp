@@ -95,7 +95,8 @@ int main(int argc, char **argv)
         int m = p + 1;
         int n = (p + 1) * (p + 1);
         int k = p + 1;
-        double flops = 2.0 * m * n * k * num_cells;
+
+        double flops = 3 * (2.0 * m * n * k) * num_cells;
         // Compute memory access
         double mem_access = (U.size() + 2 * W.size()) * sizeof(T);
 
