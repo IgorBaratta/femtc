@@ -91,6 +91,12 @@ int main(int argc, char **argv)
         linalg::batched_gemm<T>(phi, U, W, num_cells, degree, order);
         double t1 = MPI_Wtime();
 
+        // check that all values in W are positive and force writing it back to
+        // main memory
+        for (std::size_t i = 0; i < W.size(); i++)
+            if (W[i] < 0)
+                throw std::runtime_error("W is negative");
+
         // Compute FLOPs
         int m = p + 1;
         int n = (p + 1) * (p + 1);
