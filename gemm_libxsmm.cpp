@@ -131,6 +131,12 @@ int main(int argc, char **argv)
         double t1 = MPI_Wtime();
         MPI_Barrier(comm);
 
+        // check that all values in W are positive
+        // throw an error otherwise
+        for (int i = 0; i < W.size(); i++)
+            if (W[i] < 0)
+                throw std::runtime_error("W is negative");
+
         double flops = 3 * (2.0 * m * n * k) * num_cells;
         // Compute memory access
         double mem_access = (U.size() + 2 * W.size()) * sizeof(T);
