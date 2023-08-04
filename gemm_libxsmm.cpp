@@ -101,35 +101,40 @@ int main(int argc, char **argv)
         kernel_type kernel(flags, m, n, k, 1.0, 1.0);
         assert(kernel);
 
+        double elapsed = 0.0;
         // get time from MPI_Wtime()
         MPI_Barrier(comm);
-        double t0 = MPI_Wtime();
-
-        std::vector<T> temp0(N0 * N1 * N2);
-        std::vector<T> temp1(N0 * N1 * N2);
-        // loop over cells
-        for (int cell = 0; cell < num_cells; cell++)
+        for (int i = 0; i < 10; i++)
         {
-            std::fill(temp0.begin(), temp0.end(), 0.0);
-            std::fill(temp1.begin(), temp1.end(), 0.0);
+            double t0 = MPI_Wtime();
+            std::vector<T> temp0(N0 * N1 * N2);
+            std::vector<T> temp1(N0 * N1 * N2);
+            // loop over cells
+            for (int cell = 0; cell < num_cells; cell++)
+            {
+                std::fill(temp0.begin(), temp0.end(), 0.0);
+                std::fill(temp1.begin(), temp1.end(), 0.0);
 
-            // get pointer to U for cell i
-            const T *U_cell = &U[cell * ndofs];
+                // get pointer to U for cell i
+                const T *U_cell = &U[cell * ndofs];
 
-            // get pointer to W for cell i
-            T *W_cell = &W[cell * ndofs];
+                // get pointer to W for cell i
+                T *W_cell = &W[cell * ndofs];
 
-            // 1st tensor contraction
-            kernel(phi.data(), U_cell, temp0.data());
+                // 1st tensor contraction
+                kernel(phi.data(), U_cell, temp0.data());
 
-            // 2nd tensor contraction
-            kernel(phi.data(), temp0.data(), temp1.data());
+                // 2nd tensor contraction
+                kernel(phi.data(), temp0.data(), temp1.data());
 
-            // 3d tensor contraction
-            kernel(phi.data(), temp1.data(), W_cell);
+                // 3d tensor contraction
+                kernel(phi.data(), temp1.data(), W_cell);
+            }
+            double t1 = MPI_Wtime();
+            MPI_Barrier(comm);
+            elapsed += t1 - t0;
         }
-        double t1 = MPI_Wtime();
-        MPI_Barrier(comm);
+        elapsed /= 10.0;
 
         // check that all values in W are positive and force writing it back to
         // main memory
@@ -141,9 +146,9 @@ int main(int argc, char **argv)
         // Compute memory access
         double mem_access = (U.size() + 2 * W.size()) * sizeof(T);
 
-        double GFLOPs = flops / (t1 - t0) / 1e9;
-        double GBs = mem_access / (t1 - t0) / 1e9;
-        double Gdofs = (num_cells * ndofs) / (t1 - t0) / 1e9;
+        double GFLOPs = flops / elapsed / 1e9;
+        double GBs = mem_access / elapsed / 1e9;
+        double Gdofs = (num_cells * ndofs) / elapsed / 1e9;
 
         // Sum over all ranks
         double GFLOPs_sum = 0.0;
@@ -161,7 +166,7 @@ int main(int argc, char **argv)
             if (table)
             {
                 std::cout << degree << " " << size << " " << type_name<T>() << " ";
-                std::cout << Ndofs << " " << t1 - t0 << " " << order_str << " ";
+                std::cout << Ndofs << " " << elapsed << " " << order_str << " ";
                 std::cout << GFLOPs_sum << " " << GBs_sum << " " << Gdofs_sum << std::endl;
             }
             else
@@ -170,7 +175,7 @@ int main(int argc, char **argv)
                 std::cout << "Comm size: " << size << std::endl;
                 std::cout << "Scalar: " << type_name<T>() << std::endl;
                 std::cout << "Ndofs: " << U.size() << std::endl;
-                std::cout << "Time: " << t1 - t0 << std::endl;
+                std::cout << "Time: " << elapsed << std::endl;
                 std::cout << "Loop Order: " << order_str << std::endl;
                 std::cout << "GFLOP/s: " << GFLOPs_sum << std::endl;
                 std::cout << "GB/s: " << GBs_sum << std::endl;
