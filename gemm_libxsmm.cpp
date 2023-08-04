@@ -98,10 +98,11 @@ int main(int argc, char **argv)
         int n = N1 * N2;
         int k = N0;
         typedef libxsmm_mmfunction<T> kernel_type;
-        kernel_type kernel(flags, m, n, k, 1.0 /*alpha*/, 1.0 /*beta*/);
+        kernel_type kernel(flags, m, n, k, 1.0, 1.0);
         assert(kernel);
 
         // get time from MPI_Wtime()
+        MPI_Barrier(comm);
         double t0 = MPI_Wtime();
 
         std::vector<T> temp0(N0 * N1 * N2);
@@ -128,6 +129,7 @@ int main(int argc, char **argv)
             kernel(phi.data(), temp1.data(), W_cell);
         }
         double t1 = MPI_Wtime();
+        MPI_Barrier(comm);
 
         double flops = 2.0 * m * n * k * num_cells;
         // Compute memory access
