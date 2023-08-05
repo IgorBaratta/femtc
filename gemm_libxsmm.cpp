@@ -108,7 +108,9 @@ int main(int argc, char **argv)
         {
             double t0 = MPI_Wtime();
             std::vector<T> temp0(N0 * N1 * N2);
+            std::vector<T> temp0_transp(N0 * N1 * N2);
             std::vector<T> temp1(N0 * N1 * N2);
+            std::vector<T> temp1_transp(N0 * N1 * N2);
             // loop over cells
             for (int cell = 0; cell < num_cells; cell++)
             {
@@ -122,13 +124,32 @@ int main(int argc, char **argv)
                 T *W_cell = &W[cell * ndofs];
 
                 // 1st tensor contraction
+                // temp0[q0, i1, i2] = phi[q0, i0] * U_cell[i0, i1, i2]
                 kernel(phi.data(), U_cell, temp0.data());
 
-                // 2nd tensor contraction
-                kernel(phi.data(), temp0.data(), temp1.data());
+                // transpose temp0
+                // temp0_transp[i1, i2, q0] = temp0[q0, i1, i2]
+                for (int i0 = 0; i0 < N0; i0++)
+                    for (int i1 = 0; i1 < N1; i1++)
+                        for (int i2 = 0; i2 < N2; i2++)
+                            temp0_transp[i1 * (N2 * N0) + i2 * N0 + i0] = temp0[i0 * (N1 * N2) + i1 * N2 + i2];
 
-                // 3d tensor contraction
-                kernel(phi.data(), temp1.data(), W_cell);
+                // 2nd tensor contraction
+                // temp1[q1, i2, q0] = phi[q1, i1] * temp0_transp[i1, i2, q0]
+                kernel(phi.data(), temp0_transp.data(), temp1.data());
+
+                // transpose temp1
+                // temp1_transp[i2, q1, q0] = temp1[q1, i2, q0]
+                for (int i0 = 0; i0 < N0; i0++)
+                    for (int i1 = 0; i1 < N1; i1++)
+                        for (int i2 = 0; i2 < N2; i2++)
+                            temp1_transp[i2 * (N1 * N0) + i1 * N0 + i0] = temp1[i1 * (N2 * N0) + i2 * N0 + i0];
+
+                // 3rd tensor contraction
+                // W_cell[q2, q1, q0] += phi[q2, i2] * temp1_transp[i2, q1, q0]
+                kernel(phi.data(), temp1_transp.data(), W_cell);
+
+                
             }
             double t1 = MPI_Wtime();
             MPI_Barrier(comm);
