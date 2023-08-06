@@ -54,21 +54,21 @@ namespace linalg
     }
 // --------------------------------------------------------------------//
 // A is a column major matrix
-#define A_(i, j) a[(i) + (j)*m]
+#define A_(i, j) a[(i) + (j)*lda]
 
 // B is a row major matrix
-#define B_(i, j) b[(i)*nc + (j)]
+#define B_(i, j) b[(i)*ldb + (j)]
 
 // C is a row major matrix
-#define C_(i, j) c[(i)*nc + (j)]
+#define C_(i, j) c[(i)*ldc + (j)]
 
     // --------------------------------------------------------------------//
-    /// Compute the matrix product C <- A B + C using outer product
+    /// Compute the matrix product
     /// @param[in] a matrix of shape (m, k) - column major
     /// @param[in] b matrix of shape (k, n) - row major
     /// @param[out] c matrix of shape (m, n) - column major
     template <typename T, int k, int m, int nc, Order layout = Order::ijk>
-    void micro_gemm(const T *restrict a, const T *restrict b, T *restrict c)
+    void micro_gemm(const T *restrict a, const T *restrict b, T *restrict c, int lda = m, int ldb = nc, int ldc = nc)
     {
         if constexpr (layout == Order::ijk)
         {
@@ -114,6 +114,36 @@ namespace linalg
         }
     }
 
+    // --------------------------------------------------------------------//
+    // #define MB 4
+    // #define NB 4
+    // #define KB 4
+    //     // Compute the matrix product with block matrix vector producs
+    //     template <typename T, int k, int m, int n, Order layout = Order::ijk>
+    //     void micro_gemm_b(const T *restrict a, const T *restrict b, T *restrict c)
+    //     {
+    //         constexpr int Nk = k / KB; // number of blocks in k direction
+    //         constexpr int Nm = m / MB; // number of blocks in m direction
+    //         constexpr int Nn = n / NB; // number of blocks in n direction
+
+    //         constexpr int ldA = k;
+    //         constexpr int ldB = n;
+    //         constexpr int ldC = n;
+
+    //         for (int i = 0; i < Nm; i++)
+    //         {
+    //             for (int j = 0; j < Nn; j++)
+    //             {
+    //                 // Compute block C(i,j) = A(i,p) * B(p,j)
+    //                 T Cij[MB * NB] = {0.0};
+    //                 for (int p = 0; p < Nk; p++)
+    //                 {
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    // --------------------------------------------------------------------//
     template <typename T, int P, Order layout = Order::ijk>
     void batched_template(std::vector<T> &phi, std::vector<T> &U, std::vector<T> &W, int num_cells)
     {
