@@ -115,37 +115,77 @@ namespace linalg
     }
 
     // --------------------------------------------------------------------//
+    // A is a column major matrix
+    template <typename T, int k, int MB>
+    void packA(const T *Matrix, int lda, int id, T A_[k * MB])
+    {
+        int offset = id * MB;
+        for (int j = 0; j < MB; j++)
+            for (int i = 0; i < k; i++)
+                A_[j * MB + i] = Matrix[j * lda + i + offset];
+    }
+
+    // B is a row major matrix
+    template <typename T, int k, int NB>
+    void packB(const T *Matrix, int ldB, int id, T B_[k * NB])
+    {
+        int offset = id * NB;
+        for (int i = 0; i < k; i++)
+            for (int j = 0; j < NB; j++)
+                B_[i * NB + j] = Matrix[i * ldB + j + offset];
+    }
+
+    // C is a row major matrix
+    template <typename T, int MB, int NB>
+    void unpackC(const T C_[MB * NB], T *Matrix, int ldc, int i, int j)
+    {
+        int row0 = i * MB;
+        int col0 = j * NB;
+        for (int i = 0; i < MB; i++)
+            for (int j = 0; j < NB; j++)
+                Matrix[(row0 + i) * ldc + j + col0] = C_[i * NB + j];
+    }
+
+    // --------------------------------------------------------------------//
     // Compute the matrix product with block matrix vector producs
     template <typename T, int k, int m, int n, int NB, Order layout = Order::ijk>
     void micro_gemm_b(const T *restrict a, const T *restrict b, T *restrict c)
     {
 
-        constexpr int MB = m;
+        constexpr int MB = NB;
         constexpr int KB = k;
 
-        // constexpr int Nk = 1;      // number of blocks in k direction
-        // constexpr int Nm = 1;      // number of blocks in m direction
+        // constexpr int Nk = 1;   // number of blocks in k direction
+        constexpr int Nm = m / MB; // number of blocks in m direction
         constexpr int Nn = n / NB; // number of blocks in n direction
 
-        constexpr int nrem = n % NB; // size of the last block in n direction
+        [[maybe_unused]] constexpr int nrem = n % NB; // size of the last block in n direction
+        [[maybe_unused]] constexpr int mrem = m % MB; // size of the last block in m direction
 
         constexpr int ldA = k;
         constexpr int ldB = n;
         constexpr int ldC = n;
 
-        for (int block = 0; block < Nn; block++)
+        for (int ib = 0; ib < Nm; ib++)
         {
-            const T *Bpj = b + block * NB;
-            T *Cij = c + block * NB;
-            micro_gemm<T, KB, MB, NB, layout>(a, Bpj, Cij, ldA, ldB, ldC);
+            T Aik[KB * MB] = {0};
+            packA<T, k, MB>(a, ldA, ib, Aik);
+            for (int jb = 0; jb < Nn; jb++)
+            {
+                T Cij[MB * NB] = {0};
+                T Bpj[KB * NB] = {0};
+                packB<T, k, NB>(b, ldB, jb, Bpj);
+                micro_gemm<T, KB, MB, NB, layout>(Aik, Bpj, Cij, MB, NB, NB);
+                unpackC<T, MB, NB>(Cij, c, ldC, ib, jb);
+            }
         }
 
-        if constexpr (nrem > 0)
-        {
-            const T *Bpj = b + Nn * NB;
-            T *Cij = c + Nn * NB;
-            micro_gemm<T, KB, MB, nrem, layout>(a, Bpj, Cij, ldA, ldB, ldC);
-        }
+        // if constexpr (nrem > 0)
+        // {
+        //     const T *Bpj = b + Nn * NB;
+        //     T *Cij = c + Nn * NB;
+        //     micro_gemm<T, KB, MB, nrem, layout>(a, Bpj, Cij, ldA, ldB, ldC);
+        // }
     }
 
     // --------------------------------------------------------------------//
