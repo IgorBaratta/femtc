@@ -138,9 +138,9 @@ namespace linalg
                 T Cij[MB * NB] = {0.0};
                 for (int p = 0; p < Nk; p++)
                 {
-                    T *Aip = a + i * MB * ldA + p * KB;
-                    T *Bpj = b + p * KB * ldB + j * NB;
-                    micro_gemm<T, KB, MB, NB, layout>(Aip, Bpj, Cij, ldA, ldB, ldC);
+                    const T *Aip = a + i * MB * ldA + p * KB;
+                    const T *Bpj = b + p * KB * ldB + j * NB;
+                    micro_gemm<T, KB, MB, NB, layout>(Aip, Bpj, Cij, ldA, ldB, MB);
                 }
                 // Copy block C(i,j) to C
                 T *Cijp = c + i * MB * ldC + j * NB;
