@@ -134,7 +134,7 @@ int main(int argc, char **argv)
             {
                 std::cout << degree << " " << size << " " << type_name<T>() << " ";
                 std::cout << Ndofs << " " << elapsed << " " << order_str << " ";
-                std::cout << GFLOPs_sum << " " << GBs_sum << " " << Gdofs_sum <<" ";
+                std::cout << GFLOPs_sum << " " << GBs_sum << " " << Gdofs_sum << " ";
                 std::cout << NB << std::endl;
             }
             else
