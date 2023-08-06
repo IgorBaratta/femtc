@@ -148,11 +148,12 @@ namespace linalg
 
     // --------------------------------------------------------------------//
     // Compute the matrix product with block matrix vector producs
-    template <typename T, int k, int m, int n, int NB, Order layout = Order::ijk>
+    template <typename T, int k, int m, int n, Order layout = Order::ijk>
     void micro_gemm_b(const T *restrict a, const T *restrict b, T *restrict c)
     {
 
-        constexpr int MB = NB;
+        constexpr int NB = 16;
+        constexpr int MB = 2;
         constexpr int KB = k;
 
         // constexpr int Nk = 1;   // number of blocks in k direction
@@ -189,7 +190,7 @@ namespace linalg
     }
 
     // --------------------------------------------------------------------//
-    template <typename T, int P, int NB, Order layout = Order::ijk>
+    template <typename T, int P, Order layout = Order::ijk>
     void batched_template(std::vector<T> &phi, std::vector<T> &U, std::vector<T> &W, int num_cells)
     {
         constexpr int ndofs = (P + 1) * (P + 1) * (P + 1);
@@ -203,62 +204,62 @@ namespace linalg
             T *W_cell = &W[cell * ndofs];
             T temp0[ndofs] = {0.0};
             T temp1[ndofs] = {0.0};
-            micro_gemm_b<T, k, m, n, NB, layout>(_phi, U_cell, temp0);
-            micro_gemm_b<T, k, m, n, NB, layout>(_phi, temp0, temp1);
-            micro_gemm_b<T, k, m, n, NB, layout>(_phi, temp1, W_cell);
+            micro_gemm_b<T, k, m, n, layout>(_phi, U_cell, temp0);
+            micro_gemm_b<T, k, m, n, layout>(_phi, temp0, temp1);
+            micro_gemm_b<T, k, m, n, layout>(_phi, temp1, W_cell);
         }
     }
 
-    template <typename T, int NB, Order layout = Order::ijk>
+    template <typename T, Order layout = Order::ijk>
     void batched_gemm(std::vector<T> &a, std::vector<T> &b, std::vector<T> &c, int num_cells, int degree)
     {
         // from 1 to 15
         switch (degree)
         {
         case 1:
-            batched_template<T, 1, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 1, layout>(a, b, c, num_cells);
             break;
         case 2:
-            batched_template<T, 2, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 2, layout>(a, b, c, num_cells);
             break;
         case 3:
-            batched_template<T, 3, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 3, layout>(a, b, c, num_cells);
             break;
         case 4:
-            batched_template<T, 4, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 4, layout>(a, b, c, num_cells);
             break;
         case 5:
-            batched_template<T, 5, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 5, layout>(a, b, c, num_cells);
             break;
         case 6:
-            batched_template<T, 6, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 6, layout>(a, b, c, num_cells);
             break;
         case 7:
-            batched_template<T, 7, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 7, layout>(a, b, c, num_cells);
             break;
         case 8:
-            batched_template<T, 8, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 8, layout>(a, b, c, num_cells);
             break;
         case 9:
-            batched_template<T, 9, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 9, layout>(a, b, c, num_cells);
             break;
         case 10:
-            batched_template<T, 10, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 10, layout>(a, b, c, num_cells);
             break;
         case 11:
-            batched_template<T, 11, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 11, layout>(a, b, c, num_cells);
             break;
         case 12:
-            batched_template<T, 12, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 12, layout>(a, b, c, num_cells);
             break;
         case 13:
-            batched_template<T, 13, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 13, layout>(a, b, c, num_cells);
             break;
         case 14:
-            batched_template<T, 14, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 14, layout>(a, b, c, num_cells);
             break;
         case 15:
-            batched_template<T, 15, NB, layout>(a, b, c, num_cells);
+            batched_template<T, 15, layout>(a, b, c, num_cells);
             break;
 
         default:
@@ -267,28 +268,28 @@ namespace linalg
         }
     }
 
-    template <typename T, int NB>
+    template <typename T>
     void batched_gemm(std::vector<T> &a, std::vector<T> &b, std::vector<T> &c, int num_cells, int degree, Order order = Order::ijk)
     {
         switch (order)
         {
         case Order::ijk:
-            batched_gemm<T, NB, Order::ijk>(a, b, c, num_cells, degree);
+            batched_gemm<T, Order::ijk>(a, b, c, num_cells, degree);
             break;
         case Order::ikj:
-            batched_gemm<T, NB, Order::ikj>(a, b, c, num_cells, degree);
+            batched_gemm<T, Order::ikj>(a, b, c, num_cells, degree);
             break;
         case Order::jik:
-            batched_gemm<T, NB, Order::jik>(a, b, c, num_cells, degree);
+            batched_gemm<T, Order::jik>(a, b, c, num_cells, degree);
             break;
         case Order::jki:
-            batched_gemm<T, NB, Order::jki>(a, b, c, num_cells, degree);
+            batched_gemm<T, Order::jki>(a, b, c, num_cells, degree);
             break;
         case Order::kij:
-            batched_gemm<T, NB, Order::kij>(a, b, c, num_cells, degree);
+            batched_gemm<T, Order::kij>(a, b, c, num_cells, degree);
             break;
         case Order::kji:
-            batched_gemm<T, NB, Order::kji>(a, b, c, num_cells, degree);
+            batched_gemm<T, Order::kji>(a, b, c, num_cells, degree);
             break;
         default:
             std::cout << "order not supported" << std::endl;
