@@ -143,7 +143,7 @@ namespace linalg
         int col0 = j * NB;
         for (int i = 0; i < MB; i++)
             for (int j = 0; j < NB; j++)
-                Matrix[(row0 + i) * ldc + j + col0] = C_[i * NB + j];
+                Matrix[(row0 + i) * ldc + j + col0] += C_[i * NB + j];
     }
 
     // --------------------------------------------------------------------//
