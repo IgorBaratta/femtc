@@ -26,6 +26,7 @@ std::string type_name()
 // create main
 int main(int argc, char **argv)
 {
+    constexpr int NB = 8;
     // Initialize MPI
     MPI_Init(&argc, &argv);
     MPI_Comm comm = MPI_COMM_WORLD;
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
         for (int i = 0; i < 10; i++)
         {
             double t0 = MPI_Wtime();
-            linalg::batched_gemm<T>(phi, U, W, num_cells, degree, order);
+            linalg::batched_gemm<T, NB>(phi, U, W, num_cells, degree, order);
             double t1 = MPI_Wtime();
             MPI_Barrier(comm);
             elapsed += t1 - t0;
@@ -134,6 +135,7 @@ int main(int argc, char **argv)
                 std::cout << degree << " " << size << " " << type_name<T>() << " ";
                 std::cout << Ndofs << " " << elapsed << " " << order_str << " ";
                 std::cout << GFLOPs_sum << " " << GBs_sum << " " << Gdofs_sum << std::endl;
+                std::cout << NB;
             }
             else
             {
