@@ -145,7 +145,7 @@ namespace linalg
                 // Copy block C(i,j) to C
                 T *Cijp = c + i * MB * ldC + j * NB;
                 for (int ii = 0; ii < MB * NB; ii++)
-                    Cijp[ii] = Cij[ii];
+                    Cijp[ii] += Cij[ii];
             }
         }
     }
