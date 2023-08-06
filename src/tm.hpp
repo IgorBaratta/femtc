@@ -114,34 +114,41 @@ namespace linalg
         }
     }
 
-    // --------------------------------------------------------------------//
-    // #define MB 4
-    // #define NB 4
-    // #define KB 4
-    //     // Compute the matrix product with block matrix vector producs
-    //     template <typename T, int k, int m, int n, Order layout = Order::ijk>
-    //     void micro_gemm_b(const T *restrict a, const T *restrict b, T *restrict c)
-    //     {
-    //         constexpr int Nk = k / KB; // number of blocks in k direction
-    //         constexpr int Nm = m / MB; // number of blocks in m direction
-    //         constexpr int Nn = n / NB; // number of blocks in n direction
+// --------------------------------------------------------------------//
+#define MB 4
+#define NB 4
+#define KB 4
+    // Compute the matrix product with block matrix vector producs
+    template <typename T, int k, int m, int n, Order layout = Order::ijk>
+    void micro_gemm_b(const T *restrict a, const T *restrict b, T *restrict c)
+    {
+        constexpr int Nk = k / KB; // number of blocks in k direction
+        constexpr int Nm = m / MB; // number of blocks in m direction
+        constexpr int Nn = n / NB; // number of blocks in n direction
 
-    //         constexpr int ldA = k;
-    //         constexpr int ldB = n;
-    //         constexpr int ldC = n;
+        constexpr int ldA = k;
+        constexpr int ldB = n;
+        constexpr int ldC = n;
 
-    //         for (int i = 0; i < Nm; i++)
-    //         {
-    //             for (int j = 0; j < Nn; j++)
-    //             {
-    //                 // Compute block C(i,j) = A(i,p) * B(p,j)
-    //                 T Cij[MB * NB] = {0.0};
-    //                 for (int p = 0; p < Nk; p++)
-    //                 {
-    //                 }
-    //             }
-    //         }
-    //     }
+        for (int i = 0; i < Nm; i++)
+        {
+            for (int j = 0; j < Nn; j++)
+            {
+                // Compute block C(i,j) = A(i,p) * B(p,j)
+                T Cij[MB * NB] = {0.0};
+                for (int p = 0; p < Nk; p++)
+                {
+                    T *Aip = a + i * MB * ldA + p * KB;
+                    T *Bpj = b + p * KB * ldB + j * NB;
+                    micro_gemm<T, KB, MB, NB, layout>(Aip, Bpj, Cij, ldA, ldB, ldC);
+                }
+                // Copy block C(i,j) to C
+                T *Cijp = c + i * MB * ldC + j * NB;
+                for (int ii = 0; ii < MB * NB; ii++)
+                    Cijp[ii] = Cij[ii];
+            }
+        }
+    }
 
     // --------------------------------------------------------------------//
     template <typename T, int P, Order layout = Order::ijk>
@@ -158,9 +165,9 @@ namespace linalg
             T *W_cell = &W[cell * ndofs];
             T temp0[ndofs] = {0.0};
             T temp1[ndofs] = {0.0};
-            micro_gemm<T, k, m, n, layout>(_phi, U_cell, temp0);
-            micro_gemm<T, k, m, n, layout>(_phi, temp0, temp1);
-            micro_gemm<T, k, m, n, layout>(_phi, temp1, W_cell);
+            micro_gemm_b<T, k, m, n, layout>(_phi, U_cell, temp0);
+            micro_gemm_b<T, k, m, n, layout>(_phi, temp0, temp1);
+            micro_gemm_b<T, k, m, n, layout>(_phi, temp1, W_cell);
         }
     }
 
