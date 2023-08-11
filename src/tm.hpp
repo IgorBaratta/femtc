@@ -35,7 +35,7 @@ namespace linalg::impl
         tmp1[2].copy_to(&C_(2, 8), stdx::element_aligned);
         tmp1[3].copy_to(&C_(3, 8), stdx::element_aligned);
 
-        for (std::size_t p = 0; p < k; p++)
+        for (int p = 0; p < k; p++)
         {
             // a <= [4, k] read column and broadcast
             stdx::fixed_size_simd<double, 8> a0p = A_(0, p); // = {A_(0, p), A_(1, p), A_(2, p), A_(3, p)};
