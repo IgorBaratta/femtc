@@ -38,7 +38,7 @@ else()
 endif()
 
 # Create a sources variable with a link to all cpp files to compile
-set(SOURCES gemm_libxsmm.cpp gemm_order.cpp)
+set(SOURCES gemm_libxsmm.cpp gemm_order.cpp test_micro.cpp test_gemm.cpp)
 
 
 # Add a different executable for each cpp file in SOURCES

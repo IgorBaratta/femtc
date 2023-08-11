@@ -1,22 +1,61 @@
 #include <iostream>
 #include "tensor.hpp"
+#include <memory.h>
+#include <cstring>
+#include <experimental/simd>
+
+namespace stdx = std::experimental;
 
 #define restrict __restrict__
 
-// check if compiler is clang
-#if defined(__clang__)
-typedef float float4 __attribute__((ext_vector_type(4)));
-typedef float float8 __attribute__((ext_vector_type(8)));
-typedef float float16 __attribute__((ext_vector_type(16)));
-typedef double double4 __attribute__((ext_vector_type(4)));
-typedef double double8 __attribute__((ext_vector_type(8)));
-#elif defined(__GNUC__) || defined(__GNUG__)
-typedef float float4 __attribute__((vector_size(4 * sizeof(float))));
-typedef float float8 __attribute__((vector_size(8 * sizeof(float))));
-typedef float float16 __attribute__((vector_size(16 * sizeof(float))));
-typedef double double4 __attribute__((vector_size(4 * sizeof(double))));
-typedef double double8 __attribute__((vector_size(8 * sizeof(double))));
-#endif
+namespace linalg::impl
+{
+// A is a column major matrix
+#define A_(i, j) a[(i) + (j)*lda]
+
+// B is a row major matrix
+#define B_(i, j) b[(i)*ldb + (j)]
+
+// C is a row major matrix
+#define C_(i, j) c[(i)*ldc + (j)]
+
+    template <typename T, int k>
+    void micro_kernel(const T *restrict a, const T *restrict b, T *restrict c, int lda, int ldb, int ldc)
+    {
+        stdx::fixed_size_simd<T, 8> tmp0[4] = {0.0};
+        stdx::fixed_size_simd<T, 8> tmp1[4] = {0.0};
+
+        for (std::size_t p = 0; p < k; p++)
+        {
+            // a <= [4, k] read column and broadcast
+            stdx::fixed_size_simd<double, 8> a0p = A_(0, p); // = {A_(0, p), A_(1, p), A_(2, p), A_(3, p)};
+            stdx::fixed_size_simd<double, 8> a1p = A_(1, p);
+            stdx::fixed_size_simd<double, 8> a2p = A_(2, p);
+            stdx::fixed_size_simd<double, 8> a3p = A_(3, p);
+
+            stdx::fixed_size_simd<double, 8> b0, b1;
+            b0.copy_from(&B_(p, 0), stdx::element_aligned);
+            b1.copy_from(&B_(p, 8), stdx::element_aligned);
+
+            tmp0[0] += a0p * b0;
+            tmp0[1] += a1p * b0;
+            tmp0[2] += a2p * b0;
+            tmp0[3] += a3p * b0;
+            tmp1[0] += a0p * b1;
+            tmp1[1] += a1p * b1;
+            tmp1[2] += a2p * b1;
+            tmp1[3] += a3p * b1;
+        }
+        tmp0[0].copy_to(&C_(0, 0), stdx::element_aligned);
+        tmp0[1].copy_to(&C_(1, 0), stdx::element_aligned);
+        tmp0[2].copy_to(&C_(2, 0), stdx::element_aligned);
+        tmp0[3].copy_to(&C_(3, 0), stdx::element_aligned);
+        tmp1[0].copy_to(&C_(0, 8), stdx::element_aligned);
+        tmp1[1].copy_to(&C_(1, 8), stdx::element_aligned);
+        tmp1[2].copy_to(&C_(2, 8), stdx::element_aligned);
+        tmp1[3].copy_to(&C_(3, 8), stdx::element_aligned);
+    }
+}
 
 namespace linalg
 {
@@ -149,14 +188,11 @@ namespace linalg
     // --------------------------------------------------------------------//
     // Compute the matrix product with block matrix vector producs
     template <typename T, int k, int m, int n, Order layout = Order::ijk>
-    void micro_gemm_b(const T *restrict a, const T *restrict b, T *restrict c)
+    void gemm_blocked(const T *restrict a, const T *restrict b, T *restrict c)
     {
-
         constexpr int NB = 16;
-        constexpr int MB = 2;
-        constexpr int KB = k;
+        constexpr int MB = 4;
 
-        // constexpr int Nk = 1;   // number of blocks in k direction
         constexpr int Nm = m / MB; // number of blocks in m direction
         constexpr int Nn = n / NB; // number of blocks in n direction
 
@@ -166,27 +202,46 @@ namespace linalg
         constexpr int ldA = k;
         constexpr int ldB = n;
         constexpr int ldC = n;
-
-        for (int ib = 0; ib < Nm; ib++)
+        for (int jb = 0; jb < Nn; jb++)
         {
-            T Aik[KB * MB] = {0};
-            packA<T, k, MB>(a, ldA, ib, Aik);
-            for (int jb = 0; jb < Nn; jb++)
+            for (int ib = 0; ib < Nm; ib++)
             {
-                T Cij[MB * NB] = {0};
-                T Bpj[KB * NB] = {0};
-                packB<T, k, NB>(b, ldB, jb, Bpj);
-                micro_gemm<T, KB, MB, NB, layout>(Aik, Bpj, Cij, MB, NB, NB);
-                unpackC<T, MB, NB>(Cij, c, ldC, ib, jb);
+                const T *Aik = a + ib * MB;
+                const T *Bpj = b + jb * NB;
+                T *Cij = c + (ib * MB) * ldC + jb * NB;
+                impl::micro_kernel<T, k>(Aik, Bpj, Cij, ldA, ldB, ldC);
             }
         }
 
-        // if constexpr (nrem > 0)
-        // {
-        //     const T *Bpj = b + Nn * NB;
-        //     T *Cij = c + Nn * NB;
-        //     micro_gemm<T, KB, MB, nrem, layout>(a, Bpj, Cij, ldA, ldB, ldC);
-        // }
+        if constexpr (mrem > 0)
+        {
+            const T *Aik = a + Nm * MB;
+            for (int jb = 0; jb < Nn; jb++)
+            {
+                const T *Bpj = b + jb * NB;
+                T *Cij = c + (Nm * MB) * ldC + jb * NB;
+                micro_gemm<T, k, mrem, NB, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
+            }
+        }
+
+        if constexpr (nrem > 0)
+        {
+            const T *Bpj = b + Nn * NB;
+            for (int ib = 0; ib < Nm; ib++)
+            {
+                const T *Aik = a + ib * MB;
+                T *Cij = c + (ib * MB) * ldC + Nn * NB;
+                micro_gemm<T, k, MB, nrem, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
+            }
+        }
+
+        if constexpr (mrem > 0 and nrem > 0)
+        {
+            const T *Aik = a + Nm * MB;
+            const T *Bpj = b + Nn * NB;
+            T *Cij = c + (Nm * MB) * ldC + Nn * NB;
+            micro_gemm<T, k, mrem, nrem, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
+        }
     }
 
     // --------------------------------------------------------------------//
@@ -204,9 +259,9 @@ namespace linalg
             T *W_cell = &W[cell * ndofs];
             T temp0[ndofs] = {0.0};
             T temp1[ndofs] = {0.0};
-            micro_gemm_b<T, k, m, n, layout>(_phi, U_cell, temp0);
-            micro_gemm_b<T, k, m, n, layout>(_phi, temp0, temp1);
-            micro_gemm_b<T, k, m, n, layout>(_phi, temp1, W_cell);
+            gemm_blocked<T, k, m, n, layout>(_phi, U_cell, temp0);
+            gemm_blocked<T, k, m, n, layout>(_phi, temp0, temp1);
+            gemm_blocked<T, k, m, n, layout>(_phi, temp1, W_cell);
         }
     }
 
