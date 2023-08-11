@@ -22,50 +22,40 @@ namespace linalg::impl
     template <typename T, int k>
     void micro_kernel(const T *restrict a, const T *restrict b, T *restrict c, int lda, int ldb, int ldc)
     {
-        stdx::fixed_size_simd<T, 8> tmp0[4] = {0.0};
-        stdx::fixed_size_simd<T, 8> tmp1[4] = {0.0};
+        constexpr int width = 8;
+        typedef stdx::fixed_size_simd<T, width> simd_t;
 
-        // C <= [4, 16] read
-        tmp0[0].copy_to(&C_(0, 0), stdx::element_aligned);
-        tmp0[1].copy_to(&C_(1, 0), stdx::element_aligned);
-        tmp0[2].copy_to(&C_(2, 0), stdx::element_aligned);
-        tmp0[3].copy_to(&C_(3, 0), stdx::element_aligned);
-        tmp1[0].copy_to(&C_(0, 8), stdx::element_aligned);
-        tmp1[1].copy_to(&C_(1, 8), stdx::element_aligned);
-        tmp1[2].copy_to(&C_(2, 8), stdx::element_aligned);
-        tmp1[3].copy_to(&C_(3, 8), stdx::element_aligned);
+        constexpr int m = 4;
+        constexpr int n = 16;
+
+        constexpr int num_blocks = n / width;
+
+        std::array<simd_t, m * num_blocks> tmp;
+
+        // C <= [m, n] read
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < num_blocks; j++)
+                tmp[i * num_blocks + j].copy_from(&C_(i, j * width), stdx::element_aligned);
 
         for (int p = 0; p < k; p++)
         {
-            // a <= [4, k] read column and broadcast
-            stdx::fixed_size_simd<double, 8> a0p = A_(0, p); // = {A_(0, p), A_(1, p), A_(2, p), A_(3, p)};
-            stdx::fixed_size_simd<double, 8> a1p = A_(1, p);
-            stdx::fixed_size_simd<double, 8> a2p = A_(2, p);
-            stdx::fixed_size_simd<double, 8> a3p = A_(3, p);
+            std::array<simd_t, m> a_;
+            for (std::size_t i = 0; i < a_.size(); i++)
+                a_[i] = A_(i, p);
 
-            stdx::fixed_size_simd<double, 8> b0, b1;
-            b0.copy_from(&B_(p, 0), stdx::element_aligned);
-            b1.copy_from(&B_(p, 8), stdx::element_aligned);
+            std::array<simd_t, num_blocks> b_;
+            for (std::size_t j = 0; j < b_.size(); j++)
+                b_[j].copy_from(&B_(p, j * width), stdx::element_aligned);
 
-            tmp0[0] += a0p * b0;
-            tmp0[1] += a1p * b0;
-            tmp0[2] += a2p * b0;
-            tmp0[3] += a3p * b0;
-            tmp1[0] += a0p * b1;
-            tmp1[1] += a1p * b1;
-            tmp1[2] += a2p * b1;
-            tmp1[3] += a3p * b1;
+            for (int i = 0; i < m; i++)
+                for (int j = 0; j < num_blocks; j++)
+                    tmp[i * num_blocks + j] += a_[i] * b_[j];
         }
 
-        // C <= [4, 16] write
-        tmp0[0].copy_to(&C_(0, 0), stdx::element_aligned);
-        tmp0[1].copy_to(&C_(1, 0), stdx::element_aligned);
-        tmp0[2].copy_to(&C_(2, 0), stdx::element_aligned);
-        tmp0[3].copy_to(&C_(3, 0), stdx::element_aligned);
-        tmp1[0].copy_to(&C_(0, 8), stdx::element_aligned);
-        tmp1[1].copy_to(&C_(1, 8), stdx::element_aligned);
-        tmp1[2].copy_to(&C_(2, 8), stdx::element_aligned);
-        tmp1[3].copy_to(&C_(3, 8), stdx::element_aligned);
+        // C <= [m, n] write
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < num_blocks; j++)
+                tmp[i * num_blocks + j].copy_to(&C_(i, j * width), stdx::element_aligned);
     }
 }
 
