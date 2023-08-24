@@ -87,6 +87,8 @@ int main(int argc, char **argv)
 
         // allocate data for the determinant of the jacobian
         std::vector<T> detJ(num_cells * ndofs, 0.0);
+        std::generate(detJ.begin(), detJ.end(), []()
+                      { return std::rand() / (T)RAND_MAX; });
 
         double elapsed = 0.0;
         // get time from MPI_Wtime()
