@@ -85,13 +85,16 @@ int main(int argc, char **argv)
         // allocate data for W and set to zero
         std::vector<T> W(num_cells * ndofs, 0.0);
 
+        // allocate data for the determinant of the jacobian
+        std::vector<T> detJ(num_cells * ndofs, 0.0);
+
         double elapsed = 0.0;
         // get time from MPI_Wtime()
         MPI_Barrier(comm);
         for (int i = 0; i < 10; i++)
         {
             double t0 = MPI_Wtime();
-            linalg::batched_gemm<T>(phi, U, W, num_cells, degree, order);
+            linalg::mass_operator<T>(phi, U, W, detJ, num_cells, degree, order);
             double t1 = MPI_Wtime();
             MPI_Barrier(comm);
             elapsed += t1 - t0;

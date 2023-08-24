@@ -248,6 +248,36 @@ namespace linalg
 
     // --------------------------------------------------------------------//
     template <typename T, int P, Order layout = Order::ijk>
+    void mass_operator(const std::vector<T> &phi, std::vector<T> &U, std::vector<T> &W, const std::vector<T> &detJ, int num_cells)
+    {
+        constexpr int ndofs = (P + 1) * (P + 1) * (P + 1);
+        constexpr int m = P + 1;
+        constexpr int n = (P + 1) * (P + 1);
+        constexpr int k = (P + 1);
+        for (int cell = 0; cell < num_cells; cell++)
+        {
+            const T *U_cell = &U[cell * ndofs];
+            const T *_phi = &phi[0];
+            T *W_cell = &W[cell * ndofs];
+            T temp0[ndofs] = {0.0};
+            T temp1[ndofs] = {0.0};
+
+            gemm_blocked<T, k, m, n, layout>(_phi, U_cell, temp0);
+            gemm_blocked<T, k, m, n, layout>(_phi, temp0, temp1);
+            gemm_blocked<T, k, m, n, layout>(_phi, temp1, W_cell);
+
+            for (int i = 0; i < ndofs; i++)
+                W_cell[i] += W_cell[i] * detJ[i];
+
+            std::fill_n(temp0, ndofs, 0.0);
+            std::fill_n(temp1, ndofs, 0.0);
+            gemm_blocked<T, k, m, n, layout>(_phi, W_cell, temp0);
+            gemm_blocked<T, k, m, n, layout>(_phi, temp0, temp1);
+            gemm_blocked<T, k, m, n, layout>(_phi, temp1, W_cell);
+        }
+    }
+
+    template <typename T, int P, Order layout = Order::ijk>
     void batched_template(std::vector<T> &phi, std::vector<T> &U, std::vector<T> &W, int num_cells)
     {
         constexpr int ndofs = (P + 1) * (P + 1) * (P + 1);
@@ -268,55 +298,55 @@ namespace linalg
     }
 
     template <typename T, Order layout = Order::ijk>
-    void batched_gemm(std::vector<T> &a, std::vector<T> &b, std::vector<T> &c, int num_cells, int degree)
+    void mass_operator(std::vector<T> &a, std::vector<T> &b, std::vector<T> &c, std::vector<T> &detJ, int num_cells, int degree)
     {
         // from 1 to 15
         switch (degree)
         {
         case 1:
-            batched_template<T, 1, layout>(a, b, c, num_cells);
+            mass_operator<T, 1, layout>(a, b, c, detJ, num_cells);
             break;
         case 2:
-            batched_template<T, 2, layout>(a, b, c, num_cells);
+            mass_operator<T, 2, layout>(a, b, c, detJ, num_cells);
             break;
         case 3:
-            batched_template<T, 3, layout>(a, b, c, num_cells);
+            mass_operator<T, 3, layout>(a, b, c, detJ, num_cells);
             break;
         case 4:
-            batched_template<T, 4, layout>(a, b, c, num_cells);
+            mass_operator<T, 4, layout>(a, b, c, detJ, num_cells);
             break;
         case 5:
-            batched_template<T, 5, layout>(a, b, c, num_cells);
+            mass_operator<T, 5, layout>(a, b, c, detJ, num_cells);
             break;
         case 6:
-            batched_template<T, 6, layout>(a, b, c, num_cells);
+            mass_operator<T, 6, layout>(a, b, c, detJ, num_cells);
             break;
         case 7:
-            batched_template<T, 7, layout>(a, b, c, num_cells);
+            mass_operator<T, 7, layout>(a, b, c, detJ, num_cells);
             break;
         case 8:
-            batched_template<T, 8, layout>(a, b, c, num_cells);
+            mass_operator<T, 8, layout>(a, b, c, detJ, num_cells);
             break;
         case 9:
-            batched_template<T, 9, layout>(a, b, c, num_cells);
+            mass_operator<T, 9, layout>(a, b, c, detJ, num_cells);
             break;
         case 10:
-            batched_template<T, 10, layout>(a, b, c, num_cells);
+            mass_operator<T, 10, layout>(a, b, c, detJ, num_cells);
             break;
         case 11:
-            batched_template<T, 11, layout>(a, b, c, num_cells);
+            mass_operator<T, 11, layout>(a, b, c, detJ, num_cells);
             break;
         case 12:
-            batched_template<T, 12, layout>(a, b, c, num_cells);
+            mass_operator<T, 12, layout>(a, b, c, detJ, num_cells);
             break;
         case 13:
-            batched_template<T, 13, layout>(a, b, c, num_cells);
+            mass_operator<T, 13, layout>(a, b, c, detJ, num_cells);
             break;
         case 14:
-            batched_template<T, 14, layout>(a, b, c, num_cells);
+            mass_operator<T, 14, layout>(a, b, c, detJ, num_cells);
             break;
         case 15:
-            batched_template<T, 15, layout>(a, b, c, num_cells);
+            mass_operator<T, 15, layout>(a, b, c, detJ, num_cells);
             break;
 
         default:
@@ -326,27 +356,27 @@ namespace linalg
     }
 
     template <typename T>
-    void batched_gemm(std::vector<T> &a, std::vector<T> &b, std::vector<T> &c, int num_cells, int degree, Order order = Order::ijk)
+    void mass_operator(std::vector<T> &a, std::vector<T> &b, std::vector<T> &c, std::vector<T> &detJ, int num_cells, int degree, Order order = Order::ijk)
     {
         switch (order)
         {
         case Order::ijk:
-            batched_gemm<T, Order::ijk>(a, b, c, num_cells, degree);
+            mass_operator<T, Order::ijk>(a, b, c, detJ, num_cells, degree);
             break;
         case Order::ikj:
-            batched_gemm<T, Order::ikj>(a, b, c, num_cells, degree);
+            mass_operator<T, Order::ikj>(a, b, c, detJ, num_cells, degree);
             break;
         case Order::jik:
-            batched_gemm<T, Order::jik>(a, b, c, num_cells, degree);
+            mass_operator<T, Order::jik>(a, b, c, detJ, num_cells, degree);
             break;
         case Order::jki:
-            batched_gemm<T, Order::jki>(a, b, c, num_cells, degree);
+            mass_operator<T, Order::jki>(a, b, c, detJ, num_cells, degree);
             break;
         case Order::kij:
-            batched_gemm<T, Order::kij>(a, b, c, num_cells, degree);
+            mass_operator<T, Order::kij>(a, b, c, detJ, num_cells, degree);
             break;
         case Order::kji:
-            batched_gemm<T, Order::kji>(a, b, c, num_cells, degree);
+            mass_operator<T, Order::kji>(a, b, c, detJ, num_cells, degree);
             break;
         default:
             std::cout << "order not supported" << std::endl;
