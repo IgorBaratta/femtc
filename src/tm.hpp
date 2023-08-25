@@ -22,8 +22,8 @@ namespace linalg::impl
     template <typename T, int k>
     void micro_kernel(const T *restrict a, const T *restrict b, T *restrict c, int lda, int ldb, int ldc)
     {
-        stdx::fixed_size_simd<T, 8> tmp0[4] = {0.0};
-        stdx::fixed_size_simd<T, 8> tmp1[4] = {0.0};
+        stdx::fixed_size_simd<T, 8> tmp0[4] = {T(0.0)};
+        stdx::fixed_size_simd<T, 8> tmp1[4] = {T(0.0)};
 
         // C <= [4, 16] read
         tmp0[0].copy_to(&C_(0, 0), stdx::element_aligned);
@@ -38,12 +38,12 @@ namespace linalg::impl
         for (int p = 0; p < k; p++)
         {
             // a <= [4, k] read column and broadcast
-            stdx::fixed_size_simd<double, 8> a0p = A_(0, p); // = {A_(0, p), A_(1, p), A_(2, p), A_(3, p)};
-            stdx::fixed_size_simd<double, 8> a1p = A_(1, p);
-            stdx::fixed_size_simd<double, 8> a2p = A_(2, p);
-            stdx::fixed_size_simd<double, 8> a3p = A_(3, p);
+            stdx::fixed_size_simd<T, 8> a0p = A_(0, p); // = {A_(0, p), A_(1, p), A_(2, p), A_(3, p)};
+            stdx::fixed_size_simd<T, 8> a1p = A_(1, p);
+            stdx::fixed_size_simd<T, 8> a2p = A_(2, p);
+            stdx::fixed_size_simd<T, 8> a3p = A_(3, p);
 
-            stdx::fixed_size_simd<double, 8> b0, b1;
+            stdx::fixed_size_simd<T, 8> b0, b1;
             b0.copy_from(&B_(p, 0), stdx::element_aligned);
             b1.copy_from(&B_(p, 8), stdx::element_aligned);
 
