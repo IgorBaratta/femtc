@@ -194,10 +194,7 @@ namespace linalg
         int col0 = j * NB;
         for (int i = 0; i < MB; i++)
             for (int j = 0; j < NB; j++)
-            {
                 Matrix[(row0 + i) * ldc + j + col0] += C_[i * NB + j];
-                C_[i * NB + j] = T{0.0};
-            }
     }
 
     // --------------------------------------------------------------------//
@@ -218,12 +215,12 @@ namespace linalg
         constexpr int ldB = n;
         constexpr int ldC = n;
 
-        T Ctemp[MB * NB] = {0.0};
 
         for (int jb = 0; jb < Nn; jb++)
         {
             for (int ib = 0; ib < Nm; ib++)
             {
+                T Ctemp[MB * NB] = {0.0};
                 const T *Aik = a + ib * MB;
                 const T *Bpj = b + jb * NB;
                 micro_gemm<T, k, MB, NB, layout>(Aik, Bpj, Ctemp, ldA, ldB, NB);
