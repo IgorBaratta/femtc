@@ -11,13 +11,13 @@ namespace stdx = std::experimental;
 namespace linalg::impl
 {
 // A is a column major matrix
-#define A_(i, j) a[(i) + (j)*lda]
+#define A_(i, j) a[(i) + (j) * lda]
 
 // B is a row major matrix
-#define B_(i, j) b[(i)*ldb + (j)]
+#define B_(i, j) b[(i) * ldb + (j)]
 
 // C is a row major matrix
-#define C_(i, j) c[(i)*ldc + (j)]
+#define C_(i, j) c[(i) * ldc + (j)]
 
     template <typename T, int k>
     void micro_kernel(const T *restrict a, const T *restrict b, T *restrict c, int lda, int ldb, int ldc)
@@ -105,13 +105,13 @@ namespace linalg
     }
 // --------------------------------------------------------------------//
 // A is a column major matrix
-#define A_(i, j) a[(i) + (j)*lda]
+#define A_(i, j) a[(i) + (j) * lda]
 
 // B is a row major matrix
-#define B_(i, j) b[(i)*ldb + (j)]
+#define B_(i, j) b[(i) * ldb + (j)]
 
 // C is a row major matrix
-#define C_(i, j) c[(i)*ldc + (j)]
+#define C_(i, j) c[(i) * ldc + (j)]
 
     // --------------------------------------------------------------------//
     /// Compute the matrix product
@@ -188,13 +188,16 @@ namespace linalg
 
     // C is a row major matrix
     template <typename T, int MB, int NB>
-    void unpackC(const T C_[MB * NB], T *Matrix, int ldc, int i, int j)
+    void unpackC(T C_[MB * NB], T *Matrix, int ldc, int i, int j)
     {
         int row0 = i * MB;
         int col0 = j * NB;
         for (int i = 0; i < MB; i++)
             for (int j = 0; j < NB; j++)
+            {
                 Matrix[(row0 + i) * ldc + j + col0] += C_[i * NB + j];
+                C_[i * NB + j] = T{0.0};
+            }
     }
 
     // --------------------------------------------------------------------//
@@ -214,14 +217,18 @@ namespace linalg
         constexpr int ldA = k;
         constexpr int ldB = n;
         constexpr int ldC = n;
+
+        T Ctemp[MB * NB] = {0.0};
+
         for (int jb = 0; jb < Nn; jb++)
         {
             for (int ib = 0; ib < Nm; ib++)
             {
                 const T *Aik = a + ib * MB;
                 const T *Bpj = b + jb * NB;
-                T *Cij = c + (ib * MB) * ldC + jb * NB;
-                impl::micro_kernel<T, k>(Aik, Bpj, Cij, ldA, ldB, ldC);
+                micro_gemm<T, k, MB, NB, layout>(Aik, Bpj, Ctemp, ldA, ldB, NB);
+                T *Cij_ = c + (ib * MB) * ldC + jb * NB;
+                unpackC<T, MB, NB>(Ctemp, Cij_, ldC, ib, jb);
             }
         }
 
@@ -272,17 +279,18 @@ namespace linalg
             const T *detJ_cell = &detJ[cell * ndofs];
             T temp0[ndofs] = {0.0};
             T temp1[ndofs] = {0.0};
+            T W0[ndofs] = {0.0};
 
             gemm_blocked<T, k, m, n, layout>(_phi, U_cell, temp0);
             gemm_blocked<T, k, m, n, layout>(_phi, temp0, temp1);
-            gemm_blocked<T, k, m, n, layout>(_phi, temp1, W_cell);
+            gemm_blocked<T, k, m, n, layout>(_phi, temp1, W0);
 
             for (int i = 0; i < ndofs; i++)
-                W_cell[i] += W_cell[i] * detJ_cell[i];
+                W0[i] += W0[i] * detJ_cell[i];
 
             std::fill_n(temp0, ndofs, 0.0);
             std::fill_n(temp1, ndofs, 0.0);
-            gemm_blocked<T, k, m, n, layout>(_phi, W_cell, temp0);
+            gemm_blocked<T, k, m, n, layout>(_phi, W0, temp0);
             gemm_blocked<T, k, m, n, layout>(_phi, temp0, temp1);
             gemm_blocked<T, k, m, n, layout>(_phi, temp1, W_cell);
         }
