@@ -188,10 +188,10 @@ namespace linalg
 
     // C is a row major matrix
     template <typename T, int MB, int NB>
-    void unpackC(T C_[MB * NB], T *Matrix, int ldc, int i, int j)
+    void unpackC(T C_[MB * NB], T *Matrix, int ldc, int ir, int jr)
     {
-        int row0 = i * MB;
-        int col0 = j * NB;
+        int row0 = ir * MB;
+        int col0 = jr * NB;
         for (int i = 0; i < MB; i++)
             for (int j = 0; j < NB; j++)
                 Matrix[(row0 + i) * ldc + j + col0] += C_[i * NB + j];
