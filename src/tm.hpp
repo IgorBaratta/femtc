@@ -312,8 +312,8 @@ namespace linalg
             const T *U_cell = &U[cell * ndofs];
             const T *_phi = &phi[0];
             T *W_cell = &W[cell * ndofs];
-            T temp0[ndofs] = T{0.0};
-            T temp1[ndofs] = T{0.0};
+            T temp0[ndofs] = {T(0.0)};
+            T temp1[ndofs] = {T(0.0)};
             gemm_blocked<T, k, m, n, layout>(_phi, U_cell, temp0);
             gemm_blocked<T, k, m, n, layout>(_phi, temp0, temp1);
             gemm_blocked<T, k, m, n, layout>(_phi, temp1, W_cell);
