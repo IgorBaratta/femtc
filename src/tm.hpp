@@ -214,11 +214,6 @@ namespace linalg
         [[maybe_unused]] constexpr int nrem = n % NB; // size of the last block in n direction
         [[maybe_unused]] constexpr int mrem = m % MB; // size of the last block in m direction
 
-        std::cout << "nrem = " << nrem << std::endl;
-        std::cout << "mrem = " << mrem << std::endl;
-        std::cout << "Number of blocks " << Nm * Nn << std::endl;
-        std::cout << " ===================== \n";
-
         constexpr int ldA = m; // (p + 1)
         constexpr int ldB = n; // (p + 1) * (p + 1)
         constexpr int ldC = m; // (p + 1)
