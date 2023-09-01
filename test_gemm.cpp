@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
     // A is stored in column-major order
     // B is stored in row-major order
-    // C is stored in row-major order
+    // C is stored in column-major order
 
     std::vector<double> A((P + 1) * (P + 1));
     std::generate(A.begin(), A.end(), []()
@@ -46,24 +46,13 @@ int main(int argc, char **argv)
                 C_ref[i * ldc + j] += A[i + l * lda] * B[l * ldb + j];
 
     std::vector<double> C((P + 1) * (P + 1) * (P + 1), 0);
-    // int lda = 4;
-    // int ldb = 16;
-    // int ldc = 16;
-    // linalg::impl::micro_kernel<T, k>(A.data(), B.data(), C.data(), lda, ldb, ldc);
-
-    // // check if C == C_ref
-    // for (std::size_t i = 0; i < 4 * 16; ++i)
-    //     if (std::abs(C[i] - C_ref[i]) > 1e-12)
-    //         std::cout << "C[" << i << "] = " << C[i] << " != " << C_ref[i] << std::endl;
-
-    // set C to zero
-    std::fill(C.begin(), C.end(), 0.0);
     linalg::gemm_blocked<T, k, m, n>(A.data(), B.data(), C.data());
 
     // check if C == C_ref
-    for (std::size_t i = 0; i < m * n; ++i)
-        if (std::abs(C[i] - C_ref[i]) > 1e-12)
-            std::cout << "C[" << i << "] = " << C[i] << " != " << C_ref[i] << std::endl;
+    for (std::size_t i = 0; i < m; ++i)
+        for (std::size_t j = 0; j < n; ++j)
+            if (std::abs(C[i + j * m] - C_ref[i * n + j]) > 1e-10)
+                std::cout << "C[" << i + j * m << "] = " << C[i + j * m] << " != " << C_ref[i * n + j] << std::endl;
 
     return 0;
 }
