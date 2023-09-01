@@ -197,8 +197,8 @@ namespace linalg
     template <typename T, int k, int m, int n, Order layout = Order::ijk>
     void gemm_blocked(const T *restrict a, const T *restrict b, T *restrict c)
     {
-        constexpr int NB = 16;
-        constexpr int MB = 4;
+        constexpr int NB = 8;
+        constexpr int MB = 8;
 
         constexpr int Nm = m / MB; // number of blocks in m direction
         constexpr int Nn = n / NB; // number of blocks in n direction
@@ -210,27 +210,25 @@ namespace linalg
         constexpr int ldB = n; // (p + 1) * (p + 1)
         constexpr int ldC = m; // (p + 1)
 
-        T Ctemp[MB * NB] = {0.0};
         for (int jb = 0; jb < Nn; jb++)
         {
             for (int ib = 0; ib < Nm; ib++)
             {
-                // pack A
+                // pack A (extract MB x k block from A)
                 const T *Aik = a + ib * MB;
 
-                // pack B
+                // pack B (extract k x NB block from B)
                 const T *Bpj = b + jb * NB;
 
                 // Compute Cij += Ai. * B.j
-                // Ctemp is a row major matrix of size (MB, NB)
+                T Ctemp[MB * NB] = {0.0};
                 micro_gemm<T, k, MB, NB, layout>(Aik, Bpj, Ctemp, ldA, ldB, NB);
 
                 // pack C
                 T *Cij = c + jb * (ldC * NB) + ib * MB;
-                // transpose Ctemp and insert into Cij
                 for (int i = 0; i < MB; i++)
                     for (int j = 0; j < NB; j++)
-                        Cij[j * ldC + i] += Ctemp[i * NB + j];
+                        Cij[j * ldC + i] = Ctemp[i * NB + j];
             }
         }
 
@@ -240,8 +238,15 @@ namespace linalg
             for (int jb = 0; jb < Nn; jb++)
             {
                 const T *Bpj = b + jb * NB;
+
+                T Ctemp[mrem * NB] = {0.0};
+                micro_gemm<T, k, mrem, NB, layout>(Aik, Bpj, Ctemp, ldA, ldB, NB);
+
                 T *Cij = c + jb * (ldC * NB) + Nm * MB;
-                micro_gemm<T, k, mrem, NB, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
+
+                for (int i = 0; i < mrem; i++)
+                    for (int j = 0; j < NB; j++)
+                        Cij[j * ldC + i] = Ctemp[i * NB + j];
             }
         }
 
@@ -251,8 +256,15 @@ namespace linalg
             for (int ib = 0; ib < Nm; ib++)
             {
                 const T *Aik = a + ib * MB;
+
+                T Ctemp[MB * nrem] = {0.0};
+                micro_gemm<T, k, MB, nrem, layout>(Aik, Bpj, Ctemp, ldA, ldB, nrem);
+
                 T *Cij = c + Nn * (ldC * NB) + ib * MB;
-                micro_gemm<T, k, MB, nrem, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
+
+                for (int i = 0; i < MB; i++)
+                    for (int j = 0; j < nrem; j++)
+                        Cij[j * ldC + i] = Ctemp[i * nrem + j];
             }
         }
 
@@ -260,8 +272,15 @@ namespace linalg
         {
             const T *Aik = a + Nm * MB;
             const T *Bpj = b + Nn * NB;
+
+            T Ctemp[mrem * nrem] = {0.0};
+            micro_gemm<T, k, mrem, nrem, layout>(Aik, Bpj, Ctemp, ldA, ldB, nrem);
+
             T *Cij = c + Nn * (ldC * NB) + Nm * MB;
-            micro_gemm<T, k, mrem, nrem, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
+
+            for (int i = 0; i < mrem; i++)
+                for (int j = 0; j < nrem; j++)
+                    Cij[j * ldC + i] = Ctemp[i * nrem + j];
         }
     }
 
@@ -288,7 +307,7 @@ namespace linalg
             gemm_blocked<T, k, m, n, layout>(_phi, temp1, W0);
 
             for (int i = 0; i < ndofs; i++)
-                W0[i] += W0[i] * detJ_cell[i];
+                W0[i] = W0[i] * detJ_cell[i];
 
             std::fill_n(temp0, ndofs, 0.0);
             std::fill_n(temp1, ndofs, 0.0);
