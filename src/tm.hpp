@@ -17,13 +17,13 @@ namespace linalg::impl
 #define B_(i, j) b[(i) * ldb + (j)]
 
 // C is a row major matrix
-#define C_(i, j) c[(i) * ldc + (j)]
+#define C_(i, j) c[(i) + (j) * ldc]
 
     template <typename T, int k>
     void micro_kernel(const T *restrict a, const T *restrict b, T *restrict c, int lda, int ldb, int ldc)
     {
-        stdx::fixed_size_simd<T, 8> tmp0[4] = {0.0};
-        stdx::fixed_size_simd<T, 8> tmp1[4] = {0.0};
+        stdx::fixed_size_simd<T, 8> tmp0[4] = {T(0.0)};
+        stdx::fixed_size_simd<T, 8> tmp1[4] = {T(0.0)};
 
         // C <= [4, 16] read
         tmp0[0].copy_to(&C_(0, 0), stdx::element_aligned);
@@ -38,12 +38,12 @@ namespace linalg::impl
         for (int p = 0; p < k; p++)
         {
             // a <= [4, k] read column and broadcast
-            stdx::fixed_size_simd<double, 8> a0p = A_(0, p); // = {A_(0, p), A_(1, p), A_(2, p), A_(3, p)};
-            stdx::fixed_size_simd<double, 8> a1p = A_(1, p);
-            stdx::fixed_size_simd<double, 8> a2p = A_(2, p);
-            stdx::fixed_size_simd<double, 8> a3p = A_(3, p);
+            stdx::fixed_size_simd<T, 8> a0p = A_(0, p); // = {A_(0, p), A_(1, p), A_(2, p), A_(3, p)};
+            stdx::fixed_size_simd<T, 8> a1p = A_(1, p);
+            stdx::fixed_size_simd<T, 8> a2p = A_(2, p);
+            stdx::fixed_size_simd<T, 8> a3p = A_(3, p);
 
-            stdx::fixed_size_simd<double, 8> b0, b1;
+            stdx::fixed_size_simd<T, 8> b0, b1;
             b0.copy_from(&B_(p, 0), stdx::element_aligned);
             b1.copy_from(&B_(p, 8), stdx::element_aligned);
 
@@ -111,7 +111,7 @@ namespace linalg
 #define B_(i, j) b[(i) * ldb + (j)]
 
 // C is a row major matrix
-#define C_(i, j) c[(i) * ldc + (j)]
+#define C_(i, j) c[(i) + (j) * ldc]
 
     // --------------------------------------------------------------------//
     /// Compute the matrix product
@@ -119,7 +119,7 @@ namespace linalg
     /// @param[in] b matrix of shape (k, n) - row major
     /// @param[out] c matrix of shape (m, n) - column major
     template <typename T, int k, int m, int nc, Order layout = Order::ijk>
-    void micro_gemm(const T *restrict a, const T *restrict b, T *restrict c, int lda = m, int ldb = nc, int ldc = nc)
+    void micro_gemm(const T *restrict a, const T *restrict b, T *restrict c, int lda = m, int ldb = nc, int ldc = m)
     {
         if constexpr (layout == Order::ijk)
         {
@@ -198,7 +198,10 @@ namespace linalg
     }
 
     // --------------------------------------------------------------------//
-    // Compute the matrix product with block matrix vector producs
+    // Compute the matrix product with block matrix matrix products
+    // A is a column major matrix
+    // B is a row major matrix
+    // C is a column major matrix
     template <typename T, int k, int m, int n, Order layout = Order::ijk>
     void gemm_blocked(const T *restrict a, const T *restrict b, T *restrict c)
     {
@@ -211,21 +214,30 @@ namespace linalg
         [[maybe_unused]] constexpr int nrem = n % NB; // size of the last block in n direction
         [[maybe_unused]] constexpr int mrem = m % MB; // size of the last block in m direction
 
-        constexpr int ldA = k;
-        constexpr int ldB = n;
-        constexpr int ldC = n;
+        std::cout << "nrem = " << nrem << std::endl;
+        std::cout << "mrem = " << mrem << std::endl;
+        std::cout << "Number of blocks " << Nm * Nn << std::endl;
+        std::cout << " ===================== \n";
 
+        constexpr int ldA = m; // (p + 1)
+        constexpr int ldB = n; // (p + 1) * (p + 1)
+        constexpr int ldC = m; // (p + 1)
 
         for (int jb = 0; jb < Nn; jb++)
         {
             for (int ib = 0; ib < Nm; ib++)
             {
-                T Ctemp[MB * NB] = {0.0};
+                // pack A
                 const T *Aik = a + ib * MB;
+
+                // pack B
                 const T *Bpj = b + jb * NB;
-                micro_gemm<T, k, MB, NB, layout>(Aik, Bpj, Ctemp, ldA, ldB, NB);
-                T *Cij_ = c + (ib * MB) * ldC + jb * NB;
-                unpackC<T, MB, NB>(Ctemp, Cij_, ldC, ib, jb);
+
+                // pack C
+                T *Cij = c + jb * (ldC * NB) + ib * MB;
+
+                // Compute Cij += Ai. * B.j
+                micro_gemm<T, k, MB, NB, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
             }
         }
 
@@ -235,7 +247,7 @@ namespace linalg
             for (int jb = 0; jb < Nn; jb++)
             {
                 const T *Bpj = b + jb * NB;
-                T *Cij = c + (Nm * MB) * ldC + jb * NB;
+                T *Cij = c + jb * (ldC * NB) + Nm * MB;
                 micro_gemm<T, k, mrem, NB, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
             }
         }
@@ -246,7 +258,7 @@ namespace linalg
             for (int ib = 0; ib < Nm; ib++)
             {
                 const T *Aik = a + ib * MB;
-                T *Cij = c + (ib * MB) * ldC + Nn * NB;
+                T *Cij = c + Nn * (ldC * NB) + ib * MB;
                 micro_gemm<T, k, MB, nrem, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
             }
         }
@@ -255,7 +267,7 @@ namespace linalg
         {
             const T *Aik = a + Nm * MB;
             const T *Bpj = b + Nn * NB;
-            T *Cij = c + (Nm * MB) * ldC + Nn * NB;
+            T *Cij = c + Nn * (ldC * NB) + Nm * MB;
             micro_gemm<T, k, mrem, nrem, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
         }
     }
@@ -364,7 +376,36 @@ namespace linalg
         case 15:
             mass_operator<T, 15, layout>(a, b, c, detJ, num_cells);
             break;
-
+        case 16:
+            mass_operator<T, 16, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 17:
+            mass_operator<T, 17, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 18:
+            mass_operator<T, 18, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 19:
+            mass_operator<T, 19, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 20:
+            mass_operator<T, 20, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 21:
+            mass_operator<T, 21, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 22:
+            mass_operator<T, 22, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 23:
+            mass_operator<T, 23, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 24:
+            mass_operator<T, 24, layout>(a, b, c, detJ, num_cells);
+            break;
+        case 25:
+            mass_operator<T, 25, layout>(a, b, c, detJ, num_cells);
+            break;
         default:
             std::cout << "degree not supported" << std::endl;
             break;
