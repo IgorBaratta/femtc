@@ -12,7 +12,7 @@ using T = double;
 int main(int argc, char **argv)
 {
 
-    constexpr int P = 5;
+    constexpr int P = 3;
     // A has size (P + 1, P + 1)
     // B has size (P + 1, (P + 1) * (P + 1) )
     // C has size (P + 1, (P + 1) * (P + 1) )

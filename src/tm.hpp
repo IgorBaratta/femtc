@@ -8,8 +8,6 @@ namespace stdx = std::experimental;
 
 #define restrict __restrict__
 
-namespace linalg::impl
-{
 // A is a column major matrix
 #define A_(i, j) a[(i) + (j) * lda]
 
@@ -17,8 +15,10 @@ namespace linalg::impl
 #define B_(i, j) b[(i) * ldb + (j)]
 
 // C is a row major matrix
-#define C_(i, j) c[(i) + (j) * ldc]
+#define C_(i, j) c[(i) * ldc + (j)]
 
+namespace linalg::impl
+{
     template <typename T, int k>
     void micro_kernel(const T *restrict a, const T *restrict b, T *restrict c, int lda, int ldb, int ldc)
     {
@@ -103,15 +103,7 @@ namespace linalg
 
         return order;
     }
-// --------------------------------------------------------------------//
-// A is a column major matrix
-#define A_(i, j) a[(i) + (j) * lda]
-
-// B is a row major matrix
-#define B_(i, j) b[(i) * ldb + (j)]
-
-// C is a row major matrix
-#define C_(i, j) c[(i) + (j) * ldc]
+    // --------------------------------------------------------------------//
 
     // --------------------------------------------------------------------//
     /// Compute the matrix product
@@ -119,7 +111,7 @@ namespace linalg
     /// @param[in] b matrix of shape (k, n) - row major
     /// @param[out] c matrix of shape (m, n) - column major
     template <typename T, int k, int m, int nc, Order layout = Order::ijk>
-    void micro_gemm(const T *restrict a, const T *restrict b, T *restrict c, int lda = m, int ldb = nc, int ldc = m)
+    void micro_gemm(const T *restrict a, const T *restrict b, T *restrict c, int lda = m, int ldb = nc, int ldc = nc)
     {
         if constexpr (layout == Order::ijk)
         {
@@ -218,6 +210,7 @@ namespace linalg
         constexpr int ldB = n; // (p + 1) * (p + 1)
         constexpr int ldC = m; // (p + 1)
 
+        T Ctemp[MB * NB] = {0.0};
         for (int jb = 0; jb < Nn; jb++)
         {
             for (int ib = 0; ib < Nm; ib++)
@@ -228,11 +221,16 @@ namespace linalg
                 // pack B
                 const T *Bpj = b + jb * NB;
 
+                // Compute Cij += Ai. * B.j
+                // Ctemp is a row major matrix of size (MB, NB)
+                micro_gemm<T, k, MB, NB, layout>(Aik, Bpj, Ctemp, ldA, ldB, NB);
+
                 // pack C
                 T *Cij = c + jb * (ldC * NB) + ib * MB;
-
-                // Compute Cij += Ai. * B.j
-                micro_gemm<T, k, MB, NB, layout>(Aik, Bpj, Cij, ldA, ldB, ldC);
+                // transpose Ctemp and insert into Cij
+                for (int i = 0; i < MB; i++)
+                    for (int j = 0; j < NB; j++)
+                        Cij[j * ldC + i] += Ctemp[i * NB + j];
             }
         }
 
@@ -300,26 +298,7 @@ namespace linalg
         }
     }
 
-    template <typename T, int P, Order layout = Order::ijk>
-    void batched_template(std::vector<T> &phi, std::vector<T> &U, std::vector<T> &W, int num_cells)
-    {
-        constexpr int ndofs = (P + 1) * (P + 1) * (P + 1);
-        constexpr int m = P + 1;
-        constexpr int n = (P + 1) * (P + 1);
-        constexpr int k = (P + 1);
-        for (int cell = 0; cell < num_cells; cell++)
-        {
-            const T *U_cell = &U[cell * ndofs];
-            const T *_phi = &phi[0];
-            T *W_cell = &W[cell * ndofs];
-            T temp0[ndofs] = {T(0.0)};
-            T temp1[ndofs] = {T(0.0)};
-            gemm_blocked<T, k, m, n, layout>(_phi, U_cell, temp0);
-            gemm_blocked<T, k, m, n, layout>(_phi, temp0, temp1);
-            gemm_blocked<T, k, m, n, layout>(_phi, temp1, W_cell);
-        }
-    }
-
+    // --------------------------------------------------------------------//
     template <typename T, Order layout = Order::ijk>
     void mass_operator(std::vector<T> &a, std::vector<T> &b, std::vector<T> &c, std::vector<T> &detJ, int num_cells, int degree)
     {
