@@ -227,10 +227,11 @@ namespace linalg
 
                 // pack C
                 T *Cij = c + jb * (ldC * NB) + ib * MB;
-                // transpose Ctemp and insert into Cij
+
+                // due to a smaller cache miss penalty at writing than reading.
                 for (int i = 0; i < MB; i++)
                     for (int j = 0; j < NB; j++)
-                        Cij[j * ldC + i] += Ctemp[i * NB + j];
+                        Cij[j * ldC + i] = Ctemp[i * NB + j];
             }
         }
 
