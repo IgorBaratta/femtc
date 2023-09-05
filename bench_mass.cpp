@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cassert>
 
-#include "tm.hpp"
+#include "mass.hpp"
 
 using T = double;
 
@@ -41,19 +41,24 @@ int main(int argc, char **argv)
         linalg::Order order;
         std::string order_str;
 
+        int Mb = 0;
+        int Nb = 0;
+
         // get number of dofs, polynomial degree, and loop order from command line
-        if (argc > 3)
+        if (argc > 5)
         {
             Ndofs = atoi(argv[1]);
             degree = atoi(argv[2]);
             order_str = argv[3];
             order = linalg::string2order(order_str);
+            Mb = atoi(argv[4]);
+            Nb = atoi(argv[5]);
         }
         else
         {
             // if number of dofs is not given, throw error
             if (rank == 0)
-                std::cout << "Usage: " << argv[0] << " <Ndofs> <degree> <order>" << std::endl;
+                std::cout << "Usage: " << argv[0] << " <Ndofs> <degree> <order> <Mb> <Nb>" << std::endl;
             MPI_Finalize();
             return 1;
         }
@@ -73,6 +78,7 @@ int main(int argc, char **argv)
             throw std::runtime_error("Degree must be at least 1");
 
         // allocate data for phi and set to random divided by RAND_MAX
+        // should problably get that from
         std::vector<T> phi((p + 1) * (p + 1), 0.0);
         std::generate(phi.begin(), phi.end(), []()
                       { return std::rand() / (T)RAND_MAX; });
@@ -96,12 +102,14 @@ int main(int argc, char **argv)
         for (int i = 0; i < 10; i++)
         {
             double t0 = MPI_Wtime();
-            linalg::mass_operator<T>(phi, U, W, detJ, num_cells, degree, order);
+            operators::mass_operator<T>(phi, U, W, detJ, num_cells, degree, order, Mb, Nb);
             double t1 = MPI_Wtime();
             MPI_Barrier(comm);
-            elapsed += t1 - t0;
+
+            if (i < 5)
+                elapsed += t1 - t0;
         }
-        elapsed /= 10.0;
+        elapsed /= 5.0;
 
         // check that all values in W are positive and force writing it back to
         // main memory
@@ -138,6 +146,7 @@ int main(int argc, char **argv)
             {
                 std::cout << degree << " " << size << " " << type_name<T>() << " ";
                 std::cout << Ndofs << " " << elapsed << " " << order_str << " ";
+                std::cout << Mb << " " << Nb << " ";
                 std::cout << GFLOPs_sum << " " << GBs_sum << " " << Gdofs_sum << std::endl;
             }
             else

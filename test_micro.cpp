@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "tm.hpp"
+#include "linalg.hpp"
 
 using T = double;
 

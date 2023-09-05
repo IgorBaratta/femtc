@@ -17,9 +17,6 @@ include_directories("src")
 set(FASTOR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/Fastor)
 message(STATUS "Fastor include dir is ${FASTOR_INCLUDE_DIR}")
 
-# find google benchmark
-find_package(benchmark REQUIRED)
-
 # find likwid
 find_package(likwid REQUIRED)
 
@@ -38,7 +35,7 @@ else()
 endif()
 
 # Create a sources variable with a link to all cpp files to compile
-set(SOURCES gemm_libxsmm.cpp gemm_order.cpp test_micro.cpp test_gemm.cpp)
+set(SOURCES bench_mass.cpp test_micro.cpp test_gemm.cpp)
 
 
 # Add a different executable for each cpp file in SOURCES
@@ -47,7 +44,7 @@ foreach(sourcefile ${SOURCES})
     string(REPLACE ".cpp" "" name ${sourcefile})
     add_executable(${name} ${sourcefile})
     target_include_directories(${name} PUBLIC ${XSMM_INCLUDES} ${FASTOR_INCLUDE_DIR})
-    target_link_libraries(${name} benchmark::benchmark likwid::likwid ${BLAS_LIBRARIES} MPI::MPI_CXX)
+    target_link_libraries(${name} likwid::likwid ${BLAS_LIBRARIES} MPI::MPI_CXX)
 endforeach(sourcefile ${SOURCES})
 
 # print used CMAKE_CXX_FLAGS 

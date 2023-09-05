@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "tm.hpp"
+#include "linalg.hpp"
 
 using T = double;
 
@@ -40,7 +40,7 @@ void test_gemm()
                 C_ref[i + j * ldc] += A[i + l * lda] * B[l * ldb + j];
 
     std::vector<double> C(m * n, 0);
-    linalg::gemm_blocked<T, k, m, n>(A.data(), B.data(), C.data());
+    linalg::gemm_blocked<T, k, m, n, linalg::Order::kij, 8, 16>(A.data(), B.data(), C.data());
 
     for (std::size_t i = 0; i < m; ++i)
         for (std::size_t j = 0; j < n; ++j)
