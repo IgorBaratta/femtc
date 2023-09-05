@@ -122,8 +122,9 @@ int main(int argc, char **argv)
         int n = (p + 1) * (p + 1);
         int k = p + 1;
 
-        double flops = 3 * (2.0 * m * n * k) * num_cells;
-        // Compute memory access
+        double flops = 3 * (2.0 * m * n * k + n * k) * num_cells;
+
+        // Compute memory access (U read, W write + read, detJ read)
         double mem_access = (U.size() + 2 * W.size() + detJ.size()) * sizeof(T);
 
         double GFLOPs = flops / (elapsed) / 1e9;
