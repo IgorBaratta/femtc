@@ -73,60 +73,60 @@ namespace operators
         case 7:
             mass_operator<T, 7, layout, Mb, Nb>(a, b, c, detJ, num_cells);
             break;
-        case 8:
-            mass_operator<T, 8, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 9:
-            mass_operator<T, 9, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 10:
-            mass_operator<T, 10, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 11:
-            mass_operator<T, 11, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 12:
-            mass_operator<T, 12, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 13:
-            mass_operator<T, 13, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 14:
-            mass_operator<T, 14, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 15:
-            mass_operator<T, 15, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 16:
-            mass_operator<T, 16, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 17:
-            mass_operator<T, 17, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 18:
-            mass_operator<T, 18, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 19:
-            mass_operator<T, 19, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 20:
-            mass_operator<T, 20, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 21:
-            mass_operator<T, 21, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 22:
-            mass_operator<T, 22, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 23:
-            mass_operator<T, 23, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 24:
-            mass_operator<T, 24, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
-        case 25:
-            mass_operator<T, 25, layout, Mb, Nb>(a, b, c, detJ, num_cells);
-            break;
+        // case 8:
+        //     mass_operator<T, 8, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 9:
+        //     mass_operator<T, 9, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 10:
+        //     mass_operator<T, 10, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 11:
+        //     mass_operator<T, 11, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 12:
+        //     mass_operator<T, 12, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 13:
+        //     mass_operator<T, 13, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 14:
+        //     mass_operator<T, 14, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 15:
+        //     mass_operator<T, 15, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 16:
+        //     mass_operator<T, 16, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 17:
+        //     mass_operator<T, 17, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 18:
+        //     mass_operator<T, 18, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 19:
+        //     mass_operator<T, 19, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 20:
+        //     mass_operator<T, 20, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 21:
+        //     mass_operator<T, 21, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 22:
+        //     mass_operator<T, 22, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 23:
+        //     mass_operator<T, 23, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 24:
+        //     mass_operator<T, 24, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
+        // case 25:
+        //     mass_operator<T, 25, layout, Mb, Nb>(a, b, c, detJ, num_cells);
+        //     break;
         default:
             std::cout << "degree not supported" << std::endl;
             break;
@@ -138,18 +138,18 @@ namespace operators
     {
         switch (order)
         {
-        case Order::ijk:
-            mass_operator<T, Order::ijk, Mb, Nb>(a, b, c, detJ, num_cells, degree);
-            break;
-        case Order::ikj:
-            mass_operator<T, Order::ikj, Mb, Nb>(a, b, c, detJ, num_cells, degree);
-            break;
-        case Order::jik:
-            mass_operator<T, Order::jik, Mb, Nb>(a, b, c, detJ, num_cells, degree);
-            break;
-        case Order::jki:
-            mass_operator<T, Order::jki, Mb, Nb>(a, b, c, detJ, num_cells, degree);
-            break;
+        // case Order::ijk:
+        //     mass_operator<T, Order::ijk, Mb, Nb>(a, b, c, detJ, num_cells, degree);
+        //     break;
+        // case Order::ikj:
+        //     mass_operator<T, Order::ikj, Mb, Nb>(a, b, c, detJ, num_cells, degree);
+        //     break;
+        // case Order::jik:
+        //     mass_operator<T, Order::jik, Mb, Nb>(a, b, c, detJ, num_cells, degree);
+        //     break;
+        // case Order::jki:
+        //     mass_operator<T, Order::jki, Mb, Nb>(a, b, c, detJ, num_cells, degree);
+        //     break;
         case Order::kij:
             mass_operator<T, Order::kij, Mb, Nb>(a, b, c, detJ, num_cells, degree);
             break;
