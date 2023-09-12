@@ -44,7 +44,7 @@ Order string2order(std::string order_str)
 /// Compute the matrix product c += a.b
 /// @param[in] a matrix of shape (m, k) - column major
 /// @param[in] b matrix of shape (k, n) - row major
-/// @param[out] c matrix of shape (m, n) - column major
+/// @param[out] c matrix of shape (m, n) - row major
 template <typename T, int k, int m, int nc, Order layout = Order::ijk>
 void micro_gemm(const T* restrict a, const T* restrict b, T* restrict c,
                 int lda = m, int ldb = nc, int ldc = nc)
@@ -125,9 +125,9 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
   constexpr int ldB = n; // (p + 1) * (p + 1)
   constexpr int ldC = m; // (p + 1)
 
-  for (int jb = 0; jb < Nn; jb++) // Columns of B
+  for (int jb = 0; jb < Nn; jb++) // Column blocks of B
   {
-    for (int ib = 0; ib < Nm; ib++) // Rows of A
+    for (int ib = 0; ib < Nm; ib++) // Rows blocks of A
     {
       // Pointer to start of A sub-block (extract MB x k block from A)
       const T* Aik = a + ib * block_x;
