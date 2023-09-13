@@ -1,5 +1,6 @@
 #include "linalg.hpp"
 #include <iostream>
+#include <span>
 #include <vector>
 
 using namespace linalg;
@@ -7,9 +8,8 @@ using namespace linalg;
 namespace operators
 {
 template <typename T, int P, Order layout = Order::ijk, int Mb, int Nb>
-void mass_operator(const std::vector<T>& phi, std::vector<T>& U,
-                   std::vector<T>& W, const std::vector<T>& detJ,
-                   std::size_t num_cells)
+void mass_operator(std::span<const T> phi, std::span<T> U, std::span<T> W,
+                   std::span<const T> detJ, std::size_t num_cells)
 {
   constexpr int ndofs = (P + 1) * (P + 1) * (P + 1);
   constexpr int m = P + 1;
@@ -46,8 +46,8 @@ void mass_operator(const std::vector<T>& phi, std::vector<T>& U,
 
 // --------------------------------------------------------------------//
 template <typename T, Order layout, int Mb, int Nb>
-void mass_operator(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
-                   std::vector<T>& detJ, int num_cells, int degree)
+void mass_operator(std::span<T> a, std::span<T> b, std::span<T> c,
+                   std::span<T> detJ, std::size_t num_cells, int degree)
 {
   // from 1 to 15
   switch (degree)
@@ -134,8 +134,9 @@ void mass_operator(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
 }
 
 template <typename T, int Mb, int Nb>
-void mass_operator(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
-                   std::vector<T>& detJ, int num_cells, int degree, Order order)
+void mass_operator(std::span<T> a, std::span<T> b, std::span<T> c,
+                   std::span<T> detJ, std::size_t num_cells, int degree,
+                   Order order)
 {
   switch (order)
   {
@@ -164,9 +165,9 @@ void mass_operator(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
 }
 
 template <typename T, int Nb>
-void mass_operator(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
-                   std::vector<T>& detJ, int num_cells, int degree, Order order,
-                   int Mb)
+void mass_operator(std::span<T> a, std::span<T> b, std::span<T> c,
+                   std::span<T> detJ, std::size_t num_cells, int degree,
+                   Order order, int Mb)
 {
   switch (Mb)
   {
@@ -186,9 +187,9 @@ void mass_operator(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
 }
 
 template <typename T>
-void mass_operator(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c,
-                   std::vector<T>& detJ, int num_cells, int degree, Order order,
-                   int Mb, int Nb)
+void mass_operator(std::span<T> a, std::span<T> b, std::span<T> c,
+                   std::span<T> detJ, std::size_t num_cells, int degree,
+                   Order order, int Mb, int Nb)
 {
   switch (Nb)
   {
