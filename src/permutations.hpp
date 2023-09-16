@@ -9,20 +9,19 @@ namespace linalg
 /// @param[in] N0 first dimension
 /// @param[in] N1 second dimension
 /// @param[in] N2 third dimension
-template <int N0, int N1, int N2, TensorLayout layout>
-constexpr int get_offset0()
+consteval int get_offset0(int N0, int N1, int N2, TensorLayout layout)
 {
-  if constexpr (layout == TensorLayout::ijk)
+  if (layout == TensorLayout::ijk)
     return N1 * N2;
-  else if constexpr (layout == TensorLayout::ikj)
+  else if (layout == TensorLayout::ikj)
     return N1 * N2;
-  else if constexpr (layout == TensorLayout::jik)
+  else if (layout == TensorLayout::jik)
     return N2;
-  else if constexpr (layout == TensorLayout::jki)
+  else if (layout == TensorLayout::jki)
     return 1;
-  else if constexpr (layout == TensorLayout::kij)
+  else if (layout == TensorLayout::kij)
     return N1;
-  else if constexpr (layout == TensorLayout::kji)
+  else if (layout == TensorLayout::kji)
     return 1;
 }
 
@@ -31,20 +30,19 @@ constexpr int get_offset0()
 /// @param[in] N1 second dimension
 /// @param[in] N2 third dimension
 /// @param[in] layout tensor layout
-template <int N0, int N1, int N2, TensorLayout layout>
-constexpr int get_offset1()
+consteval int get_offset1(int N0, int N1, int N2, TensorLayout layout)
 {
-  if constexpr (layout == TensorLayout::ijk)
+  if (layout == TensorLayout::ijk)
     return N2;
-  else if constexpr (layout == TensorLayout::ikj)
+  else if (layout == TensorLayout::ikj)
     return 1;
-  else if constexpr (layout == TensorLayout::jik)
+  else if (layout == TensorLayout::jik)
     return N0 * N2;
-  else if constexpr (layout == TensorLayout::jki)
+  else if (layout == TensorLayout::jki)
     return N0 * N2;
-  else if constexpr (layout == TensorLayout::kij)
+  else if (layout == TensorLayout::kij)
     return 1;
-  else if constexpr (layout == TensorLayout::kji)
+  else if (layout == TensorLayout::kji)
     return N0;
 }
 
@@ -53,20 +51,19 @@ constexpr int get_offset1()
 /// @param[in] N1 second dimension
 /// @param[in] N2 third dimension
 /// @param[in] layout tensor layout
-template <int N0, int N1, int N2, TensorLayout layout>
-constexpr int get_offset2()
+consteval int get_offset2(int N0, int N1, int N2, TensorLayout layout)
 {
-  if constexpr (layout == TensorLayout::ijk)
+  if (layout == TensorLayout::ijk)
     return 1;
-  else if constexpr (layout == TensorLayout::ikj)
+  else if (layout == TensorLayout::ikj)
     return N1;
-  else if constexpr (layout == TensorLayout::jik)
+  else if (layout == TensorLayout::jik)
     return 1;
-  else if constexpr (layout == TensorLayout::jki)
+  else if (layout == TensorLayout::jki)
     return N0;
-  else if constexpr (layout == TensorLayout::kij)
+  else if (layout == TensorLayout::kij)
     return N0 * N1;
-  else if constexpr (layout == TensorLayout::kji)
+  else if (layout == TensorLayout::kji)
     return N0 * N1;
 }
 
@@ -80,13 +77,13 @@ template <typename T, int N0, int N1, int N2, TensorLayout lin,
           TensorLayout lout>
 void permute(const T* in, T* out)
 {
-  constexpr int offin0 = get_offset0<N0, N1, N2, lin>();
-  constexpr int offin1 = get_offset1<N0, N1, N2, lin>();
-  constexpr int offin2 = get_offset2<N0, N1, N2, lin>();
+  constexpr int offin0 = get_offset0(N0, N1, N2, lin);
+  constexpr int offin1 = get_offset1(N0, N1, N2, lin);
+  constexpr int offin2 = get_offset2(N0, N1, N2, lin);
 
-  constexpr int offout0 = get_offset0<N0, N1, N2, lout>();
-  constexpr int offout1 = get_offset1<N0, N1, N2, lout>();
-  constexpr int offout2 = get_offset2<N0, N1, N2, lout>();
+  constexpr int offout0 = get_offset0(N0, N1, N2, lout);
+  constexpr int offout1 = get_offset1(N0, N1, N2, lout);
+  constexpr int offout2 = get_offset2(N0, N1, N2, lout);
 
   if constexpr (lin == lout)
   {
