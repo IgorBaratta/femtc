@@ -14,5 +14,3 @@ else
     export BENCHMARKS_HOME=`spack location -i benchmark`
     echo $BENCHMARKS_HOME
 fi
-
-
