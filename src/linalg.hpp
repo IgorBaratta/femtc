@@ -1,8 +1,8 @@
 #include "tensor.hpp"
 #include <cstring>
 #include <experimental/simd>
-#include <iostream>
 #include <memory.h>
+#include <string>
 
 namespace stdx = std::experimental;
 
@@ -45,60 +45,54 @@ Order string2order(std::string order_str)
 /// @param[in] a matrix of shape (m, k) - column major
 /// @param[in] b matrix of shape (k, n) - row major
 /// @param[out] c matrix of shape (m, n) - row major
-template <typename T, int k, int m, int nc, Order layout = Order::ijk>
-void micro_gemm(const T* restrict a, const T* restrict b, T* restrict c,
-                int lda = m, int ldb = nc, int ldc = nc)
+template <typename T, int k, int m, int nc, int lda, int ldb, int ldc,
+          Order layout = Order::ijk>
+void gemm_micro(const T* restrict a, const T* restrict b, T* restrict c)
 {
-// #define A_(i, j) a[(i) + (j)*lda]
-// #define B_(i, j) b[(i)*ldb + (j)]
-#define C_(i, j) c[(i)*ldc + (j)]
-
   auto A_ = [&](auto i, auto j) { return a[i + j * lda]; };
   auto B_ = [&](auto i, auto j) { return b[i * ldb + j]; };
-  // auto C_ = [&](auto i, auto j)
-  // { return c[i * ldc + j]; };
-
+  auto C_ = [&](auto i, auto j) { return c + i * ldc + j; };
   if constexpr (layout == Order::ijk)
   {
     for (int i = 0; i < m; i++)
       for (int j = 0; j < nc; j++)
         for (int p = 0; p < k; p++)
-          C_(i, j) = A_(i, p) * B_(p, j) + C_(i, j);
+          *C_(i, j) += A_(i, p) * B_(p, j);
   }
   else if constexpr (layout == Order::ikj)
   {
     for (int i = 0; i < m; i++)
       for (int p = 0; p < k; p++)
         for (int j = 0; j < nc; j++)
-          C_(i, j) = A_(i, p) * B_(p, j) + C_(i, j);
+          *C_(i, j) += A_(i, p) * B_(p, j);
   }
   else if constexpr (layout == Order::jik)
   {
     for (int j = 0; j < nc; j++)
       for (int i = 0; i < m; i++)
         for (int p = 0; p < k; p++)
-          C_(i, j) = A_(i, p) * B_(p, j) + C_(i, j);
+          *C_(i, j) += A_(i, p) * B_(p, j);
   }
   else if constexpr (layout == Order::jki)
   {
     for (int j = 0; j < nc; j++)
       for (int p = 0; p < k; p++)
         for (int i = 0; i < m; i++)
-          C_(i, j) = A_(i, p) * B_(p, j) + C_(i, j);
+          *C_(i, j) += A_(i, p) * B_(p, j);
   }
   else if constexpr (layout == Order::kij)
   {
     for (int p = 0; p < k; p++)
       for (int i = 0; i < m; i++)
         for (int j = 0; j < nc; j++)
-          C_(i, j) = A_(i, p) * B_(p, j) + C_(i, j);
+          *C_(i, j) += A_(i, p) * B_(p, j);
   }
   else if constexpr (layout == Order::kji)
   {
     for (int p = 0; p < k; p++)
       for (int j = 0; j < nc; j++)
         for (int i = 0; i < m; i++)
-          C_(i, j) = A_(i, p) * B_(p, j) + C_(i, j);
+          *C_(i, j) += A_(i, p) * B_(p, j);
   }
 }
 
@@ -116,10 +110,8 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
   constexpr int Nm = m / block_x; // number of blocks in m direction
   constexpr int Nn = n / block_y; // number of blocks in n direction
 
-  [[maybe_unused]] constexpr int mrem
-      = m % block_x; // size of the last block in m direction
-  [[maybe_unused]] constexpr int nrem
-      = n % block_y; // size of the last block in n direction
+  constexpr int mrem = m % block_x; // size of the last block in m direction
+  constexpr int nrem = n % block_y; // size of the last block in n direction
 
   constexpr int ldA = m; // (p + 1)
   constexpr int ldB = n; // (p + 1) * (p + 1)
@@ -137,8 +129,8 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
 
       // Compute block of Cij += Ai. * B.j
       T Ctemp[block_x * block_y] = {0.0};
-      micro_gemm<T, k, block_x, block_y, layout>(Aik, Bpj, Ctemp, ldA, ldB,
-                                                 block_y);
+      gemm_micro<T, k, block_x, block_y, ldA, ldB, block_y, layout>(Aik, Bpj,
+                                                                    Ctemp);
 
       // Copy Ctemp (row-major, block) to C (column-major)
       T* Cij = c + jb * (ldC * block_y) + ib * block_x;
@@ -155,8 +147,8 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
     {
       const T* Bpj = b + jb * block_y;
       T Ctemp[mrem * block_y] = {0.0};
-      micro_gemm<T, k, mrem, block_y, layout>(Aik, Bpj, Ctemp, ldA, ldB,
-                                              block_y);
+      gemm_micro<T, k, mrem, block_y, ldA, ldB, block_y, layout>(Aik, Bpj,
+                                                                 Ctemp);
       T* Cij = c + jb * (ldC * block_y) + Nm * block_x;
       for (int i = 0; i < mrem; i++)
         for (int j = 0; j < block_y; j++)
@@ -171,7 +163,7 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
     {
       const T* Aik = a + ib * block_x;
       T Ctemp[block_x * nrem] = {0.0};
-      micro_gemm<T, k, block_x, nrem, layout>(Aik, Bpj, Ctemp, ldA, ldB, nrem);
+      gemm_micro<T, k, block_x, nrem, ldA, ldB, nrem, layout>(Aik, Bpj, Ctemp);
       T* Cij = c + Nn * (ldC * block_y) + ib * block_x;
       for (int i = 0; i < block_x; i++)
         for (int j = 0; j < nrem; j++)
@@ -183,10 +175,8 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
   {
     const T* Aik = a + Nm * block_x;
     const T* Bpj = b + Nn * block_y;
-
     T Ctemp[mrem * nrem] = {0.0};
-    micro_gemm<T, k, mrem, nrem, layout>(Aik, Bpj, Ctemp, ldA, ldB, nrem);
-
+    gemm_micro<T, k, mrem, nrem, ldA, ldB, nrem, layout>(Aik, Bpj, Ctemp);
     T* Cij = c + Nn * (ldC * block_y) + Nm * block_x;
     for (int i = 0; i < mrem; i++)
       for (int j = 0; j < nrem; j++)

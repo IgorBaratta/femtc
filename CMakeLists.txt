@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_BUILD_TYPE Release)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall -Wfatal-errors -Werror -Wextra -pedantic")
 
 include_directories("src")
 
@@ -16,23 +16,22 @@ include_directories("src")
 set(FASTOR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/Fastor)
 message(STATUS "Fastor include dir is ${FASTOR_INCLUDE_DIR}")
 
-# find likwid
-# find_package(likwid REQUIRED)
+# Find likwid
 find_package(likwid)
 
-# find BLAS any flavor
+# Find BLAS (any flavor)
 find_package(BLAS REQUIRED)
 
 # find MPI
 find_package(MPI REQUIRED)
 
-# # find libxsmm
-# if(NOT DEFINED ENV{LIBXSMM_HOME})
-#     message(FATAL_ERROR "LIBXSMM_HOME is not defined")
-# else()
-#     message(STATUS "LIBXSMM_HOME is $ENV{LIBXSMM_HOME}")
-#     set(XSMM_INCLUDES ${LIBXSMM_HOME}/include)
-# endif()
+# find libxsmm
+if(NOT DEFINED ENV{LIBXSMM_HOME})
+    message(STATUS "LIBXSMM_HOME is not defined")
+else()
+    message(STATUS "LIBXSMM_HOME is $ENV{LIBXSMM_HOME}")
+    set(XSMM_INCLUDES ${LIBXSMM_HOME}/include)
+endif()
 
 # Create a sources variable with a link to all cpp files to compile
 set(SOURCES bench_mass.cpp test_micro.cpp test_gemm.cpp)
