@@ -10,7 +10,18 @@
 
 #include "mass.hpp"
 
-using T = double;
+// This block enables to compile the code with and
+// without the likwid header in place
+#ifdef LIKWID_PERFMON
+#include <likwid-marker.h>
+#else
+#define LIKWID_MARKER_INIT
+#define LIKWID_MARKER_THREADINIT
+#define LIKWID_MARKER_REGISTER(regionTag)
+#define LIKWID_MARKER_START(regionTag)
+#define LIKWID_MARKER_STOP(regionTag)
+#define LIKWID_MARKER_CLOSE
+#endif
 
 template <typename T>
 std::string type_name()
@@ -26,6 +37,11 @@ std::string type_name()
 template <typename T>
 void run(int degree, int Ndofs, std::string order_str, int Mb, int Nb)
 {
+
+  // Register the region "kernel" with LIKWID
+  LIKWID_MARKER_INIT;
+  LIKWID_MARKER_REGISTER("mass" + typeid(T).name());
+  LIKWID_MARKER_THREADINIT;
 
   MPI_Comm comm = MPI_COMM_WORLD;
 
@@ -79,7 +95,7 @@ void run(int degree, int Ndofs, std::string order_str, int Mb, int Nb)
     double t1 = MPI_Wtime();
     MPI_Barrier(comm);
 
-    if (i < 5)
+    if (i >= 5)
       elapsed += t1 - t0;
   }
   elapsed /= 5.0;

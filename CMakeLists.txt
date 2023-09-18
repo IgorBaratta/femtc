@@ -12,10 +12,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall -Wfatal-errors -Werror -W
 
 include_directories("src")
 
-# clone repository https://github.com/romeric/Fastor
-set(FASTOR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/Fastor)
-message(STATUS "Fastor include dir is ${FASTOR_INCLUDE_DIR}")
-
 # Find likwid
 find_package(likwid)
 

@@ -1,6 +1,6 @@
-#include "tensor.hpp"
 #include <cstring>
 #include <memory.h>
+#include <stdexcept>
 #include <string>
 
 #define restrict __restrict__
