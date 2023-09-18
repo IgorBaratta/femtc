@@ -113,9 +113,9 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
   constexpr int mrem = m % block_x; // size of the last block in m direction
   constexpr int nrem = n % block_y; // size of the last block in n direction
 
-  constexpr int ldA = m; // (p + 1)
-  constexpr int ldB = n; // (p + 1) * (p + 1)
-  constexpr int ldC = m; // (p + 1)
+  constexpr int ldA = m; // O(p)
+  constexpr int ldB = n; // O(p^2)
+  constexpr int ldC = m; // O(p)
 
   for (int jb = 0; jb < Nn; jb++) // Column blocks of B
   {
