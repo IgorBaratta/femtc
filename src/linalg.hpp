@@ -1,10 +1,7 @@
 #include "tensor.hpp"
 #include <cstring>
-#include <experimental/simd>
 #include <memory.h>
 #include <string>
-
-namespace stdx = std::experimental;
 
 #define restrict __restrict__
 
