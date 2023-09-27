@@ -30,7 +30,7 @@ else()
 endif()
 
 # Create a sources variable with a link to all cpp files to compile
-set(SOURCES bench_mass.cpp test_micro.cpp test_gemm.cpp)
+set(SOURCES bench_mass.cpp)
 
 # Add a different executable for each cpp file in SOURCES
 foreach(sourcefile ${SOURCES})

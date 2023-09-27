@@ -94,10 +94,10 @@ void gemm_micro(const T* restrict a, const T* restrict b, T* restrict c)
 }
 
 // --------------------------------------------------------------------//
-// Compute the matrix product C += AB with block matrix matrix products.
-// A is a column major matrix
-// B is a row major matrix
-// C is a column major matrix
+// Compute the matrix product C += AB with block matrix matrix products. (8, 16)(8, 8)
+// A is a column major matrix (m, k) [0... m-1] <- [0..3][4...7][8 .. m-1][:]
+// B is a row major matrix (k, n) <- [:][0..3][4...7][8 .. n-1]
+// C is a column major matrix (m, n)
 template <typename T, int k, int m, int n, Order layout, int MB, int NB>
 void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
 {
