@@ -6,7 +6,7 @@
 git clone --recurse-submodules git@github.com:IgorBaratta/femtc.git
 mkdir build && cd build
 
-cmake -DCMAKE_CXX_FLAGS="-march=native -Ofast" ..
+cmake -G Ninja -DCMAKE_CXX_FLAGS="-march=native -Ofast" ..
 ```
 
 ## Using spack to manage dependencies

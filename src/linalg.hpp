@@ -43,48 +43,48 @@ Order string2order(std::string order_str)
 /// @param[in] b matrix of shape (k, n) - row major
 /// @param[out] c matrix of shape (m, n) - row major
 template <typename T, int k, int m, int nc, int lda, int ldb, int ldc,
-          Order layout = Order::ijk>
+          Order order = Order::ijk>
 void gemm_micro(const T* restrict a, const T* restrict b, T* restrict c)
 {
   auto A_ = [&](auto i, auto j) { return a[i + j * lda]; };
   auto B_ = [&](auto i, auto j) { return b[i * ldb + j]; };
   auto C_ = [&](auto i, auto j) { return c + i * ldc + j; };
-  if constexpr (layout == Order::ijk)
+  if constexpr (order == Order::ijk)
   {
     for (int i = 0; i < m; i++)
       for (int j = 0; j < nc; j++)
         for (int p = 0; p < k; p++)
           *C_(i, j) += A_(i, p) * B_(p, j);
   }
-  else if constexpr (layout == Order::ikj)
+  else if constexpr (order == Order::ikj)
   {
     for (int i = 0; i < m; i++)
       for (int p = 0; p < k; p++)
         for (int j = 0; j < nc; j++)
           *C_(i, j) += A_(i, p) * B_(p, j);
   }
-  else if constexpr (layout == Order::jik)
+  else if constexpr (order == Order::jik)
   {
     for (int j = 0; j < nc; j++)
       for (int i = 0; i < m; i++)
         for (int p = 0; p < k; p++)
           *C_(i, j) += A_(i, p) * B_(p, j);
   }
-  else if constexpr (layout == Order::jki)
+  else if constexpr (order == Order::jki)
   {
     for (int j = 0; j < nc; j++)
       for (int p = 0; p < k; p++)
         for (int i = 0; i < m; i++)
           *C_(i, j) += A_(i, p) * B_(p, j);
   }
-  else if constexpr (layout == Order::kij)
+  else if constexpr (order == Order::kij)
   {
     for (int p = 0; p < k; p++)
       for (int i = 0; i < m; i++)
         for (int j = 0; j < nc; j++)
           *C_(i, j) += A_(i, p) * B_(p, j);
   }
-  else if constexpr (layout == Order::kji)
+  else if constexpr (order == Order::kji)
   {
     for (int p = 0; p < k; p++)
       for (int j = 0; j < nc; j++)
@@ -94,11 +94,11 @@ void gemm_micro(const T* restrict a, const T* restrict b, T* restrict c)
 }
 
 // --------------------------------------------------------------------//
-// Compute the matrix product C += AB with block matrix matrix products. (8, 16)(8, 8)
-// A is a column major matrix (m, k) [0... m-1] <- [0..3][4...7][8 .. m-1][:]
-// B is a row major matrix (k, n) <- [:][0..3][4...7][8 .. n-1]
+// Compute the matrix product C += AB with block matrix matrix products.
+// A is a column major matrix (m, k)
+// B is a row major matrix (k, n)
 // C is a column major matrix (m, n)
-template <typename T, int k, int m, int n, Order layout, int MB, int NB>
+template <typename T, int k, int m, int n, Order order, int MB, int NB>
 void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
 {
   constexpr int block_x = (MB == 0) ? m : MB;
@@ -126,8 +126,8 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
 
       // Compute block of Cij += Ai. * B.j
       T Ctemp[block_x * block_y] = {0.0};
-      gemm_micro<T, k, block_x, block_y, ldA, ldB, block_y, layout>(Aik, Bpj,
-                                                                    Ctemp);
+      gemm_micro<T, k, block_x, block_y, ldA, ldB, block_y, order>(Aik, Bpj,
+                                                                   Ctemp);
 
       // Copy Ctemp (row-major, block) to C (column-major)
       T* Cij = c + jb * (ldC * block_y) + ib * block_x;
@@ -144,8 +144,8 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
     {
       const T* Bpj = b + jb * block_y;
       T Ctemp[mrem * block_y] = {0.0};
-      gemm_micro<T, k, mrem, block_y, ldA, ldB, block_y, layout>(Aik, Bpj,
-                                                                 Ctemp);
+      gemm_micro<T, k, mrem, block_y, ldA, ldB, block_y, order>(Aik, Bpj,
+                                                                Ctemp);
       T* Cij = c + jb * (ldC * block_y) + Nm * block_x;
       for (int i = 0; i < mrem; i++)
         for (int j = 0; j < block_y; j++)
@@ -160,7 +160,7 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
     {
       const T* Aik = a + ib * block_x;
       T Ctemp[block_x * nrem] = {0.0};
-      gemm_micro<T, k, block_x, nrem, ldA, ldB, nrem, layout>(Aik, Bpj, Ctemp);
+      gemm_micro<T, k, block_x, nrem, ldA, ldB, nrem, order>(Aik, Bpj, Ctemp);
       T* Cij = c + Nn * (ldC * block_y) + ib * block_x;
       for (int i = 0; i < block_x; i++)
         for (int j = 0; j < nrem; j++)
@@ -173,7 +173,7 @@ void gemm_blocked(const T* restrict a, const T* restrict b, T* restrict c)
     const T* Aik = a + Nm * block_x;
     const T* Bpj = b + Nn * block_y;
     T Ctemp[mrem * nrem] = {0.0};
-    gemm_micro<T, k, mrem, nrem, ldA, ldB, nrem, layout>(Aik, Bpj, Ctemp);
+    gemm_micro<T, k, mrem, nrem, ldA, ldB, nrem, order>(Aik, Bpj, Ctemp);
     T* Cij = c + Nn * (ldC * block_y) + Nm * block_x;
     for (int i = 0; i < mrem; i++)
       for (int j = 0; j < nrem; j++)
