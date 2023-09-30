@@ -12,9 +12,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall -Wfatal-errors -Werror -W
 
 include_directories("../src")
 
-# Find likwid
-find_package(likwid)
-
 # Find BLAS (any flavor)
 find_package(BLAS REQUIRED)
 
