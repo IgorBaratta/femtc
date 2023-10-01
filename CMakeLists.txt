@@ -35,7 +35,7 @@ if (DEFINED ENV{LIKWID_PERFMON})
 endif()
 
 # Create a sources variable with a link to all cpp files to compile
-set(SOURCES bench_mass.cpp)
+set(SOURCES bench_mass.cpp bench_stiffness.cpp)
 
 # Add a different executable for each cpp file in SOURCES
 foreach(sourcefile ${SOURCES})
