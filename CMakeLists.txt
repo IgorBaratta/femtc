@@ -37,7 +37,7 @@ foreach(sourcefile ${SOURCES})
     # I used a simple string replace, to cut off .cpp.
     string(REPLACE ".cpp" "" name ${sourcefile})
     add_executable(${name} ${sourcefile})
-    target_include_directories(${name} PUBLIC ${XSMM_INCLUDES} ${FASTOR_INCLUDE_DIR})
+    target_include_directories(${name} PUBLIC ${XSMM_INCLUDES} ${LIKWID_INCLUDE_DIR})
     if (likwid_FOUND)
         target_link_libraries(${name} likwid::likwid ${BLAS_LIBRARIES} MPI::MPI_CXX)
     else()

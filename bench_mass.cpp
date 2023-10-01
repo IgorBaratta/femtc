@@ -12,6 +12,8 @@
 
 // This block enables to compile the code with and
 // without the likwid header in place
+// #define LIKWID_PERFMON 1
+
 #ifdef LIKWID_PERFMON
 #include <likwid-marker.h>
 #else
@@ -38,9 +40,12 @@ template <typename T>
 void run(int degree, int Ndofs, std::string order_str, int Mb, int Nb)
 {
 
+  std::string name = "mass";
+  name += typeid(T).name();
+
   // Register the region "kernel" with LIKWID
   LIKWID_MARKER_INIT;
-  LIKWID_MARKER_REGISTER("mass" + typeid(T).name());
+  LIKWID_MARKER_REGISTER(name.c_str());
   LIKWID_MARKER_THREADINIT;
 
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -87,6 +92,8 @@ void run(int degree, int Ndofs, std::string order_str, int Mb, int Nb)
   double elapsed = 0.0;
   // get time from MPI_Wtime()
   MPI_Barrier(comm);
+
+  LIKWID_MARKER_START(name.c_str());
   for (int i = 0; i < 10; i++)
   {
     double t0 = MPI_Wtime();
@@ -100,6 +107,9 @@ void run(int degree, int Ndofs, std::string order_str, int Mb, int Nb)
   }
   elapsed /= 5.0;
 
+  LIKWID_MARKER_STOP(name.c_str());
+  LIKWID_MARKER_CLOSE;
+
   // Check that all values in W are positive and force writing it back
   // to main memory
   for (std::size_t i = 0; i < W.size(); i++)
@@ -111,7 +121,7 @@ void run(int degree, int Ndofs, std::string order_str, int Mb, int Nb)
   int n = (p + 1) * (p + 1);
   int k = p + 1;
 
-  double flops = 3 * (2.0 * m * n * k + n * k) * num_cells;
+  double flops = 3 * 2 * (2.0 * m * n * k + n * k) * num_cells;
 
   // Compute memory access (U read, W write + read, detJ read)
   double mem_access = (U.size() + 2 * W.size() + detJ.size()) * sizeof(T);
