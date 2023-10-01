@@ -12,8 +12,6 @@
 
 // This block enables to compile the code with and
 // without the likwid header in place
-// #define LIKWID_PERFMON 1
-
 #ifdef LIKWID_PERFMON
 #include <likwid-marker.h>
 #else
