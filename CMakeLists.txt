@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_BUILD_TYPE Release)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall -Wfatal-errors -Werror -Wextra -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -Wall -Wextra -pedantic")
 
 include_directories("src")
 
@@ -25,8 +25,13 @@ find_package(MPI REQUIRED)
 if(NOT DEFINED ENV{LIBXSMM_HOME})
     message(STATUS "LIBXSMM_HOME is not defined")
 else()
-    message(STATUS "LIBXSMM_HOME is $ENV{LIBXSMM_HOME}")
-    set(XSMM_INCLUDES ${LIBXSMM_HOME}/include)
+    set(XSMM_INCLUDES $ENV{LIBXSMM_HOME}/include)
+    message(STATUS "LIBXSMM_HOME is ${XSMM_INCLUDES}")
+endif()
+
+if (DEFINED ENV{LIKWID_PERFMON})
+    message(STATUS "LIKWID_PERFMON is defined")
+    add_definitions(-DLIKWID_PERFMON)
 endif()
 
 # Create a sources variable with a link to all cpp files to compile
