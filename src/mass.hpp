@@ -15,6 +15,11 @@ void mass_operator(std::span<const T> phi, std::span<T> U, std::span<T> W,
   constexpr int m = P + 1;
   constexpr int n = (P + 1) * (P + 1);
   constexpr int k = (P + 1);
+
+  // Get basis evaluation matrix and its transpose
+  const T* _phi = phi.data();
+  const T* _phi_t = phi.data();
+
   for (std::size_t cell = 0; cell < num_cells; cell++)
   {
     std::size_t stride = cell * ndofs;
@@ -22,7 +27,6 @@ void mass_operator(std::span<const T> phi, std::span<T> U, std::span<T> W,
     const T* detJ_cell = &detJ[stride];
 
     T* W_cell = &W[stride];
-    const T* _phi = phi.data();
 
     // Temporary arrays
     T temp0[ndofs] = {0.0};
@@ -38,9 +42,9 @@ void mass_operator(std::span<const T> phi, std::span<T> U, std::span<T> W,
 
     std::fill_n(temp0, ndofs, 0.0);
     std::fill_n(temp1, ndofs, 0.0);
-    gemm_blocked<T, k, m, n, layout, Mb, Nb>(_phi, W0, temp0);
-    gemm_blocked<T, k, m, n, layout, Mb, Nb>(_phi, temp0, temp1);
-    gemm_blocked<T, k, m, n, layout, Mb, Nb>(_phi, temp1, W_cell);
+    gemm_blocked<T, k, m, n, layout, Mb, Nb>(_phi_t, W0, temp0);
+    gemm_blocked<T, k, m, n, layout, Mb, Nb>(_phi_t, temp0, temp1);
+    gemm_blocked<T, k, m, n, layout, Mb, Nb>(_phi_t, temp1, W_cell);
   }
 }
 
@@ -183,6 +187,9 @@ void mass_operator(std::span<T> a, std::span<T> b, std::span<T> c,
   case 0:
     mass_operator<T, 0, Nb>(a, b, c, detJ, num_cells, degree, order);
     break;
+  default:
+    std::cout << "Block size not supported" << std::endl;
+    break;
   }
 }
 
@@ -204,6 +211,9 @@ void mass_operator(std::span<T> a, std::span<T> b, std::span<T> c,
     break;
   case 0:
     mass_operator<T, 0>(a, b, c, detJ, num_cells, degree, order, Mb);
+    break;
+  default:
+    std::cout << "Block size not supported" << std::endl;
     break;
   }
 }
